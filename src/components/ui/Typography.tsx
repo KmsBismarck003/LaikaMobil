@@ -7,6 +7,7 @@
 import React from 'react';
 import { Text, TextProps, StyleSheet } from 'react-native';
 import { useAppTheme } from '../../styles/ThemeProvider';
+import { useAccessibility } from '../../funciones/accesibilidad/useAccessibility';
 
 export type TypographyVariant =
   | 'display'
@@ -36,12 +37,18 @@ export const Typography: React.FC<TypographyProps> = ({
   ...props
 }) => {
   const { theme } = useAppTheme();
+  const { textScale } = useAccessibility();
   const baseStyle = theme.typography[variant] ?? theme.typography.body;
+
+  const dynamicFontSize = baseStyle.fontSize ? Math.round(baseStyle.fontSize * textScale) : undefined;
+  const dynamicLineHeight = baseStyle.lineHeight ? Math.round(baseStyle.lineHeight * textScale) : undefined;
 
   return (
     <Text
       style={[
         baseStyle,
+        dynamicFontSize ? { fontSize: dynamicFontSize } : null,
+        dynamicLineHeight ? { lineHeight: dynamicLineHeight } : null,
         color   && { color },
         align   && { textAlign: align },
         weight  && { fontWeight: weight },

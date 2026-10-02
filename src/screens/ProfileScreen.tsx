@@ -30,6 +30,7 @@ import { Typography } from '../components/ui/Typography';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useStyles } from '../styles/useStyles';
+import { useAchievements } from '../hooks/useAchievements';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Profile'>;
@@ -40,6 +41,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const { theme } = useAppTheme();
   const user = useAuth();
   const insets = useSafeAreaInsets();
+  const { totalPoints, tier, loading: achievementsLoading } = useAchievements();
 
   // ── Sin sesión ───────────────────────────────────────────────────────────
 
@@ -118,6 +120,15 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             {user.email}
           </Typography>
 
+          {!achievementsLoading && tier && (
+            <View style={styles.rankBadgeContainer}>
+              <Feather name={tier.icon as any} size={14} color={tier.color} />
+              <Typography variant="footnote" color={tier.color} style={{ fontWeight: '600' }}>
+                Rango {tier.label} • {totalPoints} pts
+              </Typography>
+            </View>
+          )}
+
           {/* Badge de rol */}
           <View style={styles.roleBadge}>
             <Feather name="shield" size={11} color={theme.colors.primary} />
@@ -146,6 +157,20 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity 
             style={styles.menuItem} 
             activeOpacity={0.75}
+            onPress={() => navigation.navigate('Achievements')}
+          >
+            <View style={[styles.menuIconBox, { backgroundColor: theme.colors.warningFaint }]}>
+              <Feather name="award" size={16} color={theme.colors.warning} />
+            </View>
+            <Typography variant="subheadline" color={theme.colors.text} style={{ flex: 1 }}>
+              Mis Logros
+            </Typography>
+            <Feather name="chevron-right" size={16} color={theme.colors.textTertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            activeOpacity={0.75}
             onPress={() => navigation.navigate('Settings')}
           >
             <View style={[styles.menuIconBox, { backgroundColor: theme.colors.infoFaint }]}>
@@ -153,6 +178,20 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             </View>
             <Typography variant="subheadline" color={theme.colors.text} style={{ flex: 1 }}>
               Ajustes
+            </Typography>
+            <Feather name="chevron-right" size={16} color={theme.colors.textTertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            activeOpacity={0.75}
+            onPress={() => navigation.navigate('Accessibility')}
+          >
+            <View style={[styles.menuIconBox, { backgroundColor: theme.colors.successFaint }]}>
+              <Feather name="eye" size={16} color={theme.colors.success} />
+            </View>
+            <Typography variant="subheadline" color={theme.colors.text} style={{ flex: 1 }}>
+              Accesibilidad y funciones
             </Typography>
             <Feather name="chevron-right" size={16} color={theme.colors.textTertiary} />
           </TouchableOpacity>
@@ -196,7 +235,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     padding: theme.spacing.xl,
   },
   scrollContent: {
-    paddingBottom: theme.spacing.xxl,
+    paddingBottom: 120,
   },
 
   // ── Sin sesión ────────────────────────────────────────────────────────────
@@ -287,7 +326,18 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   email: {
     fontSize: 14,
+    marginBottom: theme.spacing.s,
+  },
+  rankBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     marginBottom: theme.spacing.m,
+    backgroundColor: theme.colors.warningFaint,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: theme.borderRadius.full,
   },
   roleBadge: {
     flexDirection: 'row',

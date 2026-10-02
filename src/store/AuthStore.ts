@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { AuthService } from '../services/AuthService';
 
 let currentUser: any = null;
 let currentToken: string | null = null;
@@ -13,9 +14,27 @@ export const loadSession = async () => {
       currentUser = JSON.parse(userStr);
       currentToken = token;
       listeners.forEach(l => l());
+      
+      // Sincronización en segundo plano con el backend
+      refreshSession();
     }
   } catch (e) {
     console.error('Error loading session', e);
+  }
+};
+
+export const refreshSession = async () => {
+  if (!currentToken) return;
+  try {
+    const freshUser = await AuthService.getMe(currentToken);
+    if (freshUser) {
+      // Actualizamos solo los datos del usuario manteniendo el token
+      currentUser = { ...currentUser, ...freshUser };
+      await AsyncStorage.setItem('user', JSON.stringify(currentUser));
+      listeners.forEach(l => l());
+    }
+  } catch (e) {
+    console.error('Error refreshSession (background sync):', e);
   }
 };
 

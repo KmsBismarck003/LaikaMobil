@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, ViewStyle, StyleProp } from 'react-native';
+import { useAccessibility } from '../../funciones/accesibilidad/useAccessibility';
 
 interface FadeInViewProps {
   children: React.ReactNode;
@@ -16,10 +17,18 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
   style,
   slideUp = false 
 }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const translateYAnim = useRef(new Animated.Value(slideUp ? 20 : 0)).current;
+  const { reduceMotion } = useAccessibility();
+  
+  const fadeAnim = useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
+  const translateYAnim = useRef(new Animated.Value(reduceMotion ? 0 : (slideUp ? 20 : 0))).current;
 
   useEffect(() => {
+    if (reduceMotion) {
+      fadeAnim.setValue(1);
+      translateYAnim.setValue(0);
+      return;
+    }
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -36,7 +45,7 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
         })
       ] : [])
     ]).start();
-  }, [fadeAnim, translateYAnim, duration, delay, slideUp]);
+  }, [fadeAnim, translateYAnim, duration, delay, slideUp, reduceMotion]);
 
   return (
     <Animated.View                 

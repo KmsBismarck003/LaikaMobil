@@ -20,4 +20,15 @@ export const AuthService = {
       throw new Error(error.response?.data?.detail || 'Error de credenciales');
     }
   },
+  getMe: async (token: string) => {
+    try {
+      const response = await authApi.get('/auth/users/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error in getMe:', error.response?.data || error.message);
+      throw error;
+    }
+  }
 };

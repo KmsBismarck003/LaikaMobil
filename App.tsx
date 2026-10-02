@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, Platform, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { EventsScreen } from './src/screens/EventsScreen';
 import { EventDetailScreen } from './src/screens/EventDetailScreen';
@@ -20,6 +20,9 @@ import { loadSession } from './src/store/AuthStore';
 import { ThemeProvider, useAppTheme } from './src/styles/ThemeProvider';
 import { PersonalInfoScreen } from './src/screens/PersonalInfoScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { AccessibilityScreen } from './src/screens/AccessibilityScreen';
+import { AccessibilityProvider } from './src/funciones/accesibilidad';
+import { AchievementsScreen } from './src/screens/AchievementsScreen';
 
 export type EventPreviewData = {
   eventId: string;
@@ -49,74 +52,73 @@ export type RootStackParamList = {
   TicketPass: { ticket: any };
   PersonalInfo: undefined;
   Settings: undefined;
+  Accessibility: undefined;
+  Achievements: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-const TabIcon: React.FC<{ name: string; color: string; size: number; focused: boolean }> = ({
+const TabIcon: React.FC<{ name: any; color: string; size: number; focused: boolean }> = ({
   name,
-  color,
   size,
   focused,
 }) => {
   const { theme } = useAppTheme();
   return (
-    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-      <Feather name={name as any} size={size} color={color} />
-      {focused && (
-        <View
-          style={{
-            position: 'absolute',
-            bottom: -6,
-            width: 4,
-            height: 4,
-            borderRadius: 2,
-            backgroundColor: theme.colors.primary,
-          }}
-        />
-      )}
+    <View style={{ 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: focused ? theme.colors.primaryFaint : 'transparent',
+    }}>
+      <Ionicons 
+        name={name} 
+        size={22} 
+        color={focused ? theme.colors.primary : theme.colors.textTertiary} 
+      />
     </View>
   );
 };
 
+import { useAccessibility } from './src/funciones/accesibilidad/useAccessibility';
+
 const MainTabs = () => {
   const { theme, isDark } = useAppTheme();
+  const { reduceMotion } = useAccessibility();
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        animation: reduceMotion ? 'none' : 'shift',
+        tabBarShowLabel: false,
         tabBarStyle: {
           position: 'absolute',
           bottom: Platform.OS === 'ios' ? 32 : 16,
           left: 16,
           right: 16,
-          borderRadius: 24,
+          borderRadius: 32,
           height: 64,
-          backgroundColor: isDark ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)',
+          backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)',
           borderTopWidth: 0,
           elevation: 0,
           overflow: 'hidden',
           borderWidth: 1,
-          borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+          borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
         },
         tabBarBackground: () => (
           <BlurView
             tint={isDark ? 'dark' : 'light'}
-            intensity={90}
+            intensity={80}
             style={StyleSheet.absoluteFill}
           />
         ),
         tabBarItemStyle: {
-          paddingVertical: 8,
-        },
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textTertiary,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-          letterSpacing: 0.3,
-          marginTop: 2,
+          paddingVertical: 0,
+          justifyContent: 'center',
+          alignItems: 'center',
         },
       }}
     >
@@ -125,8 +127,8 @@ const MainTabs = () => {
         component={EventsScreen}
         options={{
           headerShown: false,
-          tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="compass" color={color} size={size} focused={focused} />
+          tabBarIcon: ({ size, focused }) => (
+            <TabIcon name={focused ? 'compass' : 'compass-outline'} color="ignored" size={size} focused={focused} />
           ),
         }}
       />
@@ -139,8 +141,8 @@ const MainTabs = () => {
           headerTintColor: theme.colors.text,
           headerTitleStyle: { fontWeight: '700' },
           headerShadowVisible: false,
-          tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="shopping-bag" color={color} size={size} focused={focused} />
+          tabBarIcon: ({ size, focused }) => (
+            <TabIcon name={focused ? 'cart' : 'cart-outline'} color="ignored" size={size} focused={focused} />
           ),
         }}
       />
@@ -149,9 +151,8 @@ const MainTabs = () => {
         component={MyTicketsScreen}
         options={{
           headerShown: false,
-          title: 'Mis Boletos',
-          tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="credit-card" color={color} size={size} focused={focused} />
+          tabBarIcon: ({ size, focused }) => (
+            <TabIcon name={focused ? 'ticket' : 'ticket-outline'} color="ignored" size={size} focused={focused} />
           ),
         }}
       />
@@ -160,9 +161,8 @@ const MainTabs = () => {
         component={ProfileScreen as any}
         options={{
           headerShown: false,
-          title: 'Perfil',
-          tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="user" color={color} size={size} focused={focused} />
+          tabBarIcon: ({ size, focused }) => (
+            <TabIcon name={focused ? 'person' : 'person-outline'} color="ignored" size={size} focused={focused} />
           ),
         }}
       />
@@ -283,6 +283,24 @@ const RootNavigator = () => {
               animation: 'slide_from_right',
             }}
           />
+          <Stack.Screen
+            name="Accessibility"
+            component={AccessibilityScreen}
+            options={{
+              title: 'Accesibilidad',
+              headerBackTitle: 'Perfil',
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="Achievements"
+            component={AchievementsScreen}
+            options={{
+              title: 'Mis Logros',
+              headerBackTitle: 'Perfil',
+              animation: 'slide_from_right',
+            }}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </>
@@ -297,7 +315,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <RootNavigator />
+        <AccessibilityProvider>
+          <RootNavigator />
+        </AccessibilityProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
