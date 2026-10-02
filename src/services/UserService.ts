@@ -10,7 +10,7 @@ export interface UserProfile {
 export const UserService = {
   getUserProfile: async (userId: string): Promise<UserProfile> => {
     try {
-      const response = await userApi.get(`/${userId}`);
+      const response = await userApi.get(`/users/${userId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching user from Java Microservice:', error);
@@ -19,4 +19,14 @@ export const UserService = {
   },
   
   // Agregar aquí funciones de login, logout, registro según lo requiera el sistema.
+  deleteAccount: async (userId: string, token: string): Promise<void> => {
+    try {
+      await userApi.delete(`/users/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (error: any) {
+      console.error('Error deleting user from Java Microservice:', error.response?.data || error.message);
+      throw error;
+    }
+  },
 };

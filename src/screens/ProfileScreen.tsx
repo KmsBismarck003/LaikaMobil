@@ -31,6 +31,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useStyles } from '../styles/useStyles';
 import { useAchievements } from '../hooks/useAchievements';
+import { useDeleteAccount } from '../hooks/useDeleteAccount';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Profile'>;
@@ -42,6 +43,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const user = useAuth();
   const insets = useSafeAreaInsets();
   const { totalPoints, tier, loading: achievementsLoading } = useAchievements();
+  const { confirmDeleteAccount, isDeleting } = useDeleteAccount();
 
   // ── Sin sesión ───────────────────────────────────────────────────────────
 
@@ -220,6 +222,16 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             onPress={handleLogout}
             leftIcon={<Feather name="log-out" size={16} color={theme.colors.text} />}
             style={styles.logoutButton}
+            disabled={isDeleting}
+          />
+          <Button
+            title={isDeleting ? "Eliminando..." : "Eliminar Cuenta"}
+            variant="danger"
+            size="medium"
+            onPress={confirmDeleteAccount}
+            leftIcon={<Feather name="trash-2" size={16} color={theme.colors.error} />}
+            style={[styles.logoutButton, { marginTop: theme.spacing.m }]}
+            disabled={isDeleting}
           />
         </View>
 

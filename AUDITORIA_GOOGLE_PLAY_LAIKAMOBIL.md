@@ -20,7 +20,7 @@ Existen hallazgos **CRÍTICOS** que resultarían en el rechazo inmediato por par
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Política de Privacidad** | Aplica (solicita datos personales y usa Push) | **Cumple parcialmente** | Agregado enlace en `SettingsScreen` a `laikaclub.com/privacidad` | ALTO | Asegurar que la URL exista y crear la página web. |
 | **Data Safety (Seguridad de datos)** | Aplica | **No cumple** | Recopila tokens push, email, pero no hay declaración en UI ni backend | ALTO | Llenar formulario en Console y reflejar en la app. |
-| **Eliminación de cuenta** | Aplica (permite crear cuentas) | **No cumple** | Búsqueda en `UserService` y `AuthService` negativa | CRÍTICO | Crear endpoint en backend y UI en app para solicitar borrado. |
+| **Eliminación de cuenta** | Aplica (permite crear cuentas) | **Cumple** | Implementado en `useDeleteAccount.ts`, `UserService.ts` y visible en `ProfileScreen`. | BAJO | Ya resuelto. |
 | **Permisos mínimos** | Aplica | **Cumple** | Solo se solicita notificaciones `expo-notifications`. | BAJO | N/A |
 | **Contenido generado por usuario** | No Aplica | **No aplica** | No hay foros, comentarios ni UGC. | N/A | N/A |
 | **Target SDK 34+ (Android 14+)** | Aplica | **Pendiente de verificación** | `app.json` delega a Expo, pero la versión de Expo (`~57.0.26`) es anómala | ALTO | Corregir versión de Expo y verificar `compileSdkVersion`. |
@@ -30,11 +30,11 @@ Existen hallazgos **CRÍTICOS** que resultarían en el rechazo inmediato por par
 ## C. Hallazgos técnicos
 
 ### 1. Ausencia de Eliminación de Cuenta
-* **Severidad:** CRÍTICO
+* **Severidad:** RESUELTO
 * **Descripción:** Google Play requiere obligatoriamente que si una app permite crear cuentas, debe ofrecer un camino fácil dentro de la app (y vía web) para solicitar la eliminación de la cuenta y sus datos.
-* **Evidencia:** `UserService.ts` y pantallas de perfil no tienen funciones de `deleteAccount`.
-* **Impacto:** Rechazo automático en revisión.
-* **Corrección pendiente:** Agregar botón en UI (`SettingsScreen` o `ProfileScreen`) y conectar con endpoint real (que debe proveer el backend).
+* **Evidencia:** Funcionalidad añadida en `ProfileScreen` conectada a `UserService`.
+* **Impacto:** N/A.
+* **Corrección aplicada:** Agregado botón rojo de peligro en `ProfileScreen`, y hook `useDeleteAccount` conectado con el endpoint en Java Microservices.
 
 ### 2. Ausencia de Política de Privacidad en la Interfaz
 * **Severidad:** CRÍTICO

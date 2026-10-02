@@ -11,7 +11,7 @@ export const pilgrimApi = axios.create({
 
 // API exclusiva para gestión de usuarios conectada a los microservicios Java
 export const userApi = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_USER_API_URL || 'http://localhost:8080/api/users',
+  baseURL: process.env.EXPO_PUBLIC_USER_API_URL || 'http://localhost:8101',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
