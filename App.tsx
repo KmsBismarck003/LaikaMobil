@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -23,6 +23,8 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { AccessibilityScreen } from './src/screens/AccessibilityScreen';
 import { AccessibilityProvider } from './src/funciones/accesibilidad';
 import { AchievementsScreen } from './src/screens/AchievementsScreen';
+import { useNotifications } from './src/funciones/notificaciones';
+import { AnimatedSplashScreen } from './src/screens/AnimatedSplashScreen';
 
 export type EventPreviewData = {
   eventId: string;
@@ -54,6 +56,7 @@ export type RootStackParamList = {
   Settings: undefined;
   Accessibility: undefined;
   Achievements: undefined;
+  HelpSupport: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -170,13 +173,21 @@ const MainTabs = () => {
   );
 };
 
+import { useNavigationContainerRef } from '@react-navigation/native';
+
 const RootNavigator = () => {
   const { theme, isDark } = useAppTheme();
+  const navigationRef = useNavigationContainerRef<RootStackParamList>();
+  
+  // Inicializamos el interceptor de notificaciones para atrapar los "taps" 
+  // e inyectarle el enrutador de React Navigation
+  useNotifications(navigationRef);
   
   return (
     <>
       <StatusBar style={isDark ? "light" : "dark"} />
       <NavigationContainer
+        ref={navigationRef}
         theme={{
           ...(isDark ? DarkTheme : DefaultTheme),
           colors: {
@@ -301,6 +312,15 @@ const RootNavigator = () => {
               animation: 'slide_from_right',
             }}
           />
+          <Stack.Screen
+            name="HelpSupport"
+            component={require('./src/screens/HelpSupportScreen').HelpSupportScreen}
+            options={{
+              title: 'Ayuda y soporte',
+              headerBackTitle: 'Perfil',
+              animation: 'slide_from_right',
+            }}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </>
@@ -308,15 +328,28 @@ const RootNavigator = () => {
 };
 
 export default function App() {
+  const [isAppReady, setAppReady] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+
   useEffect(() => {
-    loadSession();
+    loadSession().then(() => {
+      // Damos un pequeño extra de tiempo si queremos asegurar carga de fuentes o UI
+      setAppReady(true);
+    });
   }, []);
 
   return (
     <SafeAreaProvider>
       <ThemeProvider>
         <AccessibilityProvider>
-          <RootNavigator />
+          {isAppReady && <RootNavigator />}
+          
+          {showSplash && (
+            <AnimatedSplashScreen 
+              isAppReady={isAppReady} 
+              onAnimationFinish={() => setShowSplash(false)} 
+            />
+          )}
         </AccessibilityProvider>
       </ThemeProvider>
     </SafeAreaProvider>

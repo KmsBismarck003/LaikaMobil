@@ -38,6 +38,8 @@ import { AuthPromptModal } from '../components/AuthPromptModal';
 import { TicketSelectionPanel } from '../components/TicketSelectionPanel';
 import { useAuth } from '../hooks/useAuth';
 import { useStyles } from '../styles/useStyles';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { OfflineStateView } from '../components/ui/OfflineStateView';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EventDetail'>;
 
@@ -56,9 +58,9 @@ export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [selectedFunction, setSelectedFunction] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
   const user = useAuth();
+  const { isOffline } = useNetworkStatus();
 
-  useEffect(() => {
-    const fetchDetail = async () => {
+  const fetchDetail = async () => {
       try {
         setLoading(true);
         const [data, busy] = await Promise.all([
@@ -76,6 +78,8 @@ export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         setLoading(false);
       }
     };
+
+  useEffect(() => {
     fetchDetail();
   }, [eventId]);
 
@@ -138,6 +142,19 @@ export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   // ── Estados de carga y error ─────────────────────────────────────────────
 
+  // 1. Si sabemos por el OS que no hay internet, corto circuito inmediato (sin loader)
+  if (isOffline) {
+    return (
+      <View style={styles.mainContainer}>
+        <OfflineStateView 
+          onRetry={fetchDetail} 
+          onBack={() => navigation.goBack()} 
+        />
+      </View>
+    );
+  }
+
+  // 2. Cargando
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -146,7 +163,23 @@ export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     );
   }
 
+  // 3. Errores
   if (error || !event) {
+    // Si el error es de red (ej. Backend Apagado pero sí hay WiFi)
+    const isServerDown = error?.toLowerCase().includes('network error') || error?.toLowerCase().includes('conectar');
+    
+    if (isServerDown) {
+      return (
+        <View style={styles.mainContainer}>
+          <OfflineStateView 
+            onRetry={fetchDetail} 
+            onBack={() => navigation.goBack()} 
+          />
+        </View>
+      );
+    }
+
+    // Otro tipo de errores (404, etc)
     return (
       <View style={styles.centerContainer}>
         <Typography variant="title" color={theme.colors.error} style={{ marginBottom: theme.spacing.s }}>
@@ -155,6 +188,7 @@ export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         <Typography variant="body" align="center">
           {error}
         </Typography>
+        <Button title="Volver" onPress={() => navigation.goBack()} style={{ marginTop: 24 }} />
       </View>
     );
   }

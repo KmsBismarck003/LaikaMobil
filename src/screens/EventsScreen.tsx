@@ -34,6 +34,8 @@ import { CategoryTabs } from '../components/ui/CategoryTabs';
 import { Typography } from '../components/ui/Typography';
 import { Button } from '../components/ui/Button';
 import { useStyles } from '../styles/useStyles';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { OfflineStateView } from '../components/ui/OfflineStateView';
 
 const CATEGORIES = [
   { id: '',         label: 'Destacados' },
@@ -62,6 +64,7 @@ export const EventsScreen: React.FC = () => {
     availableLocations,
     refetch,
   } = useEvents();
+  const { isOffline } = useNetworkStatus();
 
   const [isSearchVisible, setIsSearchVisible] = React.useState(false);
   const [tempLocation, setTempLocation] = React.useState(location);
@@ -83,7 +86,27 @@ export const EventsScreen: React.FC = () => {
     navigation.navigate('EventDetail', { eventId, eventTitle });
   };
 
-  // Estado de error sin datos
+  // 1. Estado Sin Conexión Inmediato (Corto circuito sin loader)
+  if (isOffline && events.length === 0) {
+    return <OfflineStateView onRetry={refetch} />;
+  }
+
+  // 2. Estado de carga inicial
+  if (loading && events.length === 0) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
+
+  // 3. Error (Network Error por Backend Caído)
+  const isServerDown = error?.toLowerCase().includes('network error') || error?.toLowerCase().includes('conectar');
+  if (isServerDown && events.length === 0) {
+    return <OfflineStateView onRetry={refetch} />;
+  }
+
+  // 4. Estado de error genérico sin datos
   if (error && events.length === 0) {
     return (
       <View style={styles.centerContainer}>
@@ -93,15 +116,7 @@ export const EventsScreen: React.FC = () => {
         <Typography variant="body" align="center" style={styles.errorBody}>
           {error}
         </Typography>
-      </View>
-    );
-  }
-
-  // Estado de carga inicial
-  if (loading && events.length === 0) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Button title="Reintentar" onPress={refetch} style={{ marginTop: 24 }} />
       </View>
     );
   }

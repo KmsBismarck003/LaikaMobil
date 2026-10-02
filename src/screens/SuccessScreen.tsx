@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useAppTheme } from '../styles/ThemeProvider';
 import { Button } from '../components/ui/Button';
 import { useStyles } from '../styles/useStyles';
+import { NotificationService } from '../funciones/notificaciones';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Success'>;
 
@@ -14,6 +15,15 @@ export const SuccessScreen: React.FC<Props> = ({ route, navigation }) => {
   const styles = useStyles(createStyles);
   const { theme } = useAppTheme();
   const { userName, eventTitle, eventDate, quantity } = route.params;
+
+  useEffect(() => {
+    // Programar el recordatorio del evento una vez confirmada la compra
+    NotificationService.scheduleEventReminder(
+      'success-' + Date.now(), // ID referencial temporal si no se tiene el eventId real en route.params
+      eventTitle,
+      eventDate
+    );
+  }, [eventTitle, eventDate]);
 
   return (
     <View style={styles.container}>

@@ -9,6 +9,7 @@ import { PaymentMethodSelector } from '../components/PaymentMethodSelector';
 import { TicketService } from '../services/TicketService';
 import { useAuth } from '../hooks/useAuth';
 import { useStyles } from '../styles/useStyles';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Cart'>;
 
@@ -26,6 +27,29 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
   
   // Nombre del usuario (priorizamos 'name' o fallamos a 'email')
   const userName = user?.name || user?.email?.split('@')[0] || 'Invitado';
+
+  // --- FASE 2: MOTOR ANTI-FALLOS ---
+  const { isOffline } = useNetworkStatus();
+  const idempotencyKey = React.useRef(`idem_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [timeLeft, setTimeLeft] = useState(3 * 60); // 3 minutos
+
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      Alert.alert('Tiempo Agotado', 'Tus lugares han sido liberados. Por favor, vuelve a intentar.');
+      navigation.goBack();
+      return;
+    }
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft, navigation]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (!user) {
@@ -50,6 +74,11 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
   }, [user?.id]);
 
   const handlePayment = async () => {
+    if (isOffline) {
+      Alert.alert('Sin Conexión', 'Perdiste la conexión a internet. Tus lugares están reservados hasta que el contador llegue a cero. Conéctate para pagar.');
+      return;
+    }
+
     if (!selectedMethodId) {
       Alert.alert('Atención', 'Por favor selecciona un método de pago.');
       return;
@@ -89,6 +118,7 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
         items: purchaseItems,
         paymentMethod: selectedMethodId === 'new' ? 'card' : 'card',
         paymentId: intentResponse.data.paymentId || `pi_${Date.now()}`,
+        idempotencyKey: idempotencyKey.current, // Evitamos doble cobro si se reconecta
         shippingInfo: null,
         shippingMethod: 'digital'
       });
@@ -164,8 +194,18 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
 
         <View style={styles.emptyCartContainer}>
           <Text style={styles.emptyText}>Tu reservación está asegurada</Text>
-          <Text style={styles.emptySubText}>Por favor, revisa que los datos de tu evento sean correctos. Tienes 10 minutos para completar el pago.</Text>
+          <Text style={styles.emptySubText}>
+            Tienes {formatTime(timeLeft)} minutos para completar el pago antes de que se liberen tus boletos.
+          </Text>
         </View>
+
+        {isOffline && (
+          <View style={styles.offlineBanner}>
+            <Text style={styles.offlineBannerText}>
+              ¡Perdiste la conexión! Tu lugar sigue reservado. Recupera tu red antes de que acabe el tiempo.
+            </Text>
+          </View>
+        )}
         
       </ScrollView>
       
@@ -236,6 +276,20 @@ const createStyles = (theme: any) => StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.colors.borderFaint,
     paddingBottom: 40,
+  },
+  offlineBanner: {
+    marginTop: theme.spacing.m,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: '#ef4444',
+    padding: theme.spacing.m,
+    borderRadius: theme.borderRadius.m,
+  },
+  offlineBannerText: {
+    color: '#ef4444',
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '600',
   },
   // Estilos de la vista previa del evento
   previewCard: {

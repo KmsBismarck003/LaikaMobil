@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { AuthService } from '../services/AuthService';
+import { NotificationService } from '../funciones/notificaciones';
 
 let currentUser: any = null;
 let currentToken: string | null = null;
@@ -46,6 +47,9 @@ export const setCurrentUser = async (user: any, token?: string) => {
     if (user && currentToken) {
       await AsyncStorage.setItem('user', JSON.stringify(user));
       await SecureStore.setItemAsync('token', currentToken);
+      
+      // Registrar el token push al iniciar sesión
+      NotificationService.setupPushToken(user.id);
     }
   } catch (e) {
     console.error('Error saving session', e);
@@ -60,6 +64,9 @@ export const logout = async () => {
   try {
     await AsyncStorage.removeItem('user');
     await SecureStore.deleteItemAsync('token');
+    
+    // Limpiar el token de notificaciones push local y remoto
+    await NotificationService.clearPushToken();
   } catch (e) {}
   listeners.forEach(l => l());
 };

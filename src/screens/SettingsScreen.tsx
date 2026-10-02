@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../styles/ThemeProvider';
 import { Typography } from '../components/ui/Typography';
 import { useStyles } from '../styles/useStyles';
+import { NotificationPreferencesView } from '../funciones/notificaciones';
 
 export const SettingsScreen: React.FC = () => {
   const styles = useStyles(createStyles);
@@ -57,7 +58,11 @@ export const SettingsScreen: React.FC = () => {
             PERMISOS Y PRIVACIDAD
           </Typography>
           <View style={styles.card}>
-            <TouchableOpacity style={styles.row} activeOpacity={0.7}>
+            <TouchableOpacity 
+              style={styles.row} 
+              activeOpacity={0.7}
+              onPress={() => Linking.openSettings()}
+            >
               <View style={[styles.iconBox, { backgroundColor: theme.colors.surfaceHighlight }]}>
                 <Feather name="bell" size={18} color={theme.colors.textTertiary} />
               </View>
@@ -86,7 +91,29 @@ export const SettingsScreen: React.FC = () => {
               </Typography>
               <Feather name="chevron-right" size={20} color={theme.colors.textTertiary} />
             </TouchableOpacity>
+            <View style={styles.rowDivider} />
+            <TouchableOpacity 
+              style={styles.row} 
+              activeOpacity={0.7}
+              onPress={() => Linking.openURL('https://laikaclub.com/privacidad')}
+            >
+              <View style={[styles.iconBox, { backgroundColor: theme.colors.surfaceHighlight }]}>
+                <Feather name="shield" size={18} color={theme.colors.textTertiary} />
+              </View>
+              <Typography variant="subheadline" color={theme.colors.text} style={{ flex: 1 }}>
+                Política de Privacidad
+              </Typography>
+              <Feather name="external-link" size={20} color={theme.colors.textTertiary} />
+            </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Sección: Notificaciones (Nueva) */}
+        <View style={styles.section}>
+          <Typography variant="overline" color={theme.colors.textSecondary} style={styles.sectionTitle}>
+            PREFERENCIAS DE NOTIFICACIONES
+          </Typography>
+          <NotificationPreferencesView />
         </View>
 
       </ScrollView>

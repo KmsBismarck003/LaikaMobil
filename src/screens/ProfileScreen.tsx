@@ -196,7 +196,11 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             <Feather name="chevron-right" size={16} color={theme.colors.textTertiary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} activeOpacity={0.75}>
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            activeOpacity={0.75}
+            onPress={() => navigation.navigate('HelpSupport')}
+          >
             <View style={[styles.menuIconBox, { backgroundColor: theme.colors.warningFaint }]}>
               <Feather name="help-circle" size={16} color={theme.colors.warning} />
             </View>

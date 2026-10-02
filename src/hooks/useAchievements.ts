@@ -12,7 +12,7 @@ export const TIER_DATA = [
   { tier: 7, label: 'Comandante Interestelar', icon: 'shield', color: '#ef4444', pts: 5000, phase: 'FIDELIZACIÓN', reward: 'Preventa Exclusiva' },
   { tier: 8, label: 'Salto al Hiperespacio', icon: 'fast-forward', color: '#10b981', pts: 7500, phase: 'FIDELIZACIÓN', reward: 'Prueba de Sonido' },
   { tier: 9, label: 'Supernova', icon: 'sun', color: '#a855f7', pts: 9000, phase: 'FIDELIZACIÓN', reward: 'Paquete Hospitalidad' },
-  { tier: 10, label: 'El Legado Laika', icon: 'crown', color: '#eab308', pts: 10000, phase: 'LEYENDA', reward: 'MEMBRESÍA VITALICIA' },
+  { tier: 10, label: 'El Legado Laika', icon: 'award', color: '#eab308', pts: 10000, phase: 'LEYENDA', reward: 'MEMBRESÍA VITALICIA' },
 ];
 
 export const getTier = (pts: number) => {
