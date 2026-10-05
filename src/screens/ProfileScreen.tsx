@@ -32,6 +32,7 @@ import { RootStackParamList } from '../../App';
 import { useStyles } from '../styles/useStyles';
 import { useAchievements } from '../hooks/useAchievements';
 import { useDeleteAccount } from '../hooks/useDeleteAccount';
+import { UnauthenticatedView } from '../components/ui/UnauthenticatedView';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Profile'>;
@@ -49,32 +50,10 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   if (!user) {
     return (
-      <View style={[styles.container, styles.centeredContainer, { paddingTop: insets.top }]}>
-        <View style={styles.emptyIllustration}>
-          <View style={styles.emptyIconOuter}>
-            <View style={styles.emptyIconInner}>
-              <Feather name="user" size={38} color={theme.colors.textTertiary} />
-            </View>
-          </View>
-        </View>
-
-        <Typography variant="headline" color={theme.colors.text} align="center" style={styles.emptyTitle}>
-          Inicia sesión para ver tu perfil
-        </Typography>
-        <Typography variant="body" color={theme.colors.textSecondary} align="center" style={styles.emptySubtitle}>
-          Accede a tu cuenta para gestionar tus boletos, compras y preferencias.
-        </Typography>
-
-        <View style={styles.emptyActions}>
-          <Button
-            title="Iniciar Sesión"
-            variant="primary"
-            size="large"
-            onPress={() => navigation.navigate('Login', { eventPreview: undefined as any })}
-            style={styles.loginButton}
-          />
-        </View>
-      </View>
+      <UnauthenticatedView 
+        title="Tu portal exclusivo"
+        subtitle="Inicia sesión para desbloquear tu perfil, gestionar tus entradas y acceder a beneficios únicos del club."
+      />
     );
   }
 

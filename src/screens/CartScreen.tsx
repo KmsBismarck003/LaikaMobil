@@ -10,6 +10,7 @@ import { TicketService } from '../services/TicketService';
 import { useAuth } from '../hooks/useAuth';
 import { useStyles } from '../styles/useStyles';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { UnauthenticatedView } from '../components/ui/UnauthenticatedView';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Cart'>;
 
@@ -34,16 +35,23 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
   const [timeLeft, setTimeLeft] = useState(3 * 60); // 3 minutos
 
   useEffect(() => {
+    // Solo iniciar el temporizador si realmente hay un evento en proceso de compra
+    if (!eventPreview) return;
+
     if (timeLeft <= 0) {
       Alert.alert('Tiempo Agotado', 'Tus lugares han sido liberados. Por favor, vuelve a intentar.');
-      navigation.goBack();
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate('Eventos' as any); // Volver al inicio de los tabs
+      }
       return;
     }
     const timer = setInterval(() => {
       setTimeLeft((prev) => prev - 1);
     }, 1000);
     return () => clearInterval(timer);
-  }, [timeLeft, navigation]);
+  }, [timeLeft, navigation, eventPreview]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -139,6 +147,16 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   if (!eventPreview) {
+    if (!user) {
+      return (
+        <UnauthenticatedView 
+          title="Tus reservaciones"
+          subtitle="Inicia sesión para explorar eventos, guardar tus lugares favoritos y completar tus compras en segundos."
+          buttonText="Iniciar Sesión"
+        />
+      );
+    }
+
     return (
       <View style={styles.container}>
         <View style={styles.header}>

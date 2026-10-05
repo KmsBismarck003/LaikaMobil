@@ -30,6 +30,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useStyles } from '../styles/useStyles';
+import { UnauthenticatedView } from '../components/ui/UnauthenticatedView';
 
 type TabKey = 'active' | 'in_progress' | 'history';
 
@@ -91,17 +92,11 @@ export const MyTicketsScreen = () => {
 
   if (!user) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <View style={styles.emptyIconBox}>
-          <Feather name="credit-card" size={36} color={theme.colors.textTertiary} />
-        </View>
-        <Typography variant="title" color={theme.colors.text} style={styles.emptyTitle}>
-          Tus boletos te esperan
-        </Typography>
-        <Typography variant="body" align="center" color={theme.colors.textSecondary} style={styles.emptyBody}>
-          Inicia sesión para ver y gestionar tus boletos.
-        </Typography>
-      </View>
+      <UnauthenticatedView 
+        title="Tus boletos te esperan"
+        subtitle="Inicia sesión para ver y gestionar tus boletos comprados."
+        buttonText="Iniciar Sesión"
+      />
     );
   }
 

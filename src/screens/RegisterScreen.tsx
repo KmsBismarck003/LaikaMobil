@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions, ActivityIndicator, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions, ActivityIndicator, Animated, Easing, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useAppTheme } from '../styles/ThemeProvider';
 import { AuthService } from '../services/AuthService';
 import { setCurrentUser } from '../store/AuthStore';
-import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
 const { width, height } = Dimensions.get('window');
 
@@ -78,7 +77,7 @@ const GlowingStar = ({ top, left, size, delay, duration }: any) => {
 // --- Generador del Fondo de Estrellas ---
 const Starfield = () => {
   const stars = useRef(
-    Array.from({ length: 50 }).map((_, i) => ({
+    Array.from({ length: 40 }).map((_, i) => ({
       id: i,
       top: Math.random() * height,
       left: Math.random() * width,
@@ -97,41 +96,40 @@ const Starfield = () => {
   );
 };
 
-export const LoginScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { theme } = useAppTheme();
+export const RegisterScreen: React.FC<Props> = ({ route, navigation }) => {
   const { eventPreview } = route.params || {};
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const validateInputs = () => {
-    // Validación de inyección SQL y caracteres especiales
-    const sqlInjectionPattern = /(['";=]|--|\b(SELECT|UNION|INSERT|UPDATE|DELETE|DROP)\b)/i;
-    if (sqlInjectionPattern.test(email) || sqlInjectionPattern.test(password)) {
-      setErrorMsg('Caracteres especiales no permitidos. Por favor, revisa tus datos.');
-      return false;
-    }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setErrorMsg('Por favor, ingresa un correo electrónico válido.');
       return false;
     }
-    if (password.length < 6) {
-      setErrorMsg('La contraseña debe tener al menos 6 caracteres.');
+    if (password.length < 8) {
+      setErrorMsg('La contraseña debe tener al menos 8 caracteres.');
+      return false;
+    }
+    if (password !== confirmPassword) {
+      setErrorMsg('Las contraseñas no coinciden.');
       return false;
     }
     return true;
   };
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     if (!validateInputs()) return;
     try {
       setLoading(true);
       setErrorMsg('');
-      const data = await AuthService.login(email, password);
+      const data = await AuthService.register({
+        email: email.trim().toLowerCase(),
+        password: password
+      });
       
       if (data && data.user) {
         setCurrentUser(data.user, data.access_token || data.token);
@@ -141,16 +139,16 @@ export const LoginScreen: React.FC<Props> = ({ route, navigation }) => {
           if (eventPreview) {
             navigation.navigate('Cart', { user: data.user, eventPreview });
           } else {
-            navigation.goBack();
+            navigation.navigate('MainTabs' as any);
           }
         } else {
-          setErrorMsg('Tu cuenta no tiene permisos para comprar boletos.');
+          setErrorMsg('No tienes los permisos correctos en esta cuenta.');
         }
       } else {
         setErrorMsg('Respuesta inesperada del servidor.');
       }
     } catch (error: any) {
-      setErrorMsg(error.message || 'Correo o contraseña incorrectos.');
+      setErrorMsg(error.message || 'Hubo un error creando la cuenta.');
     } finally {
       setLoading(false);
     }
@@ -164,10 +162,10 @@ export const LoginScreen: React.FC<Props> = ({ route, navigation }) => {
         style={styles.keyboardView} 
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.formContainer}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <Text style={styles.title}>Hello!</Text>
-            <Text style={styles.subtitle}>Inicia sesión para continuar tu viaje espacial</Text>
+            <Text style={styles.title}>Welcome!</Text>
+            <Text style={styles.subtitle}>Únete al club y vive la experiencia</Text>
           </View>
 
           {errorMsg ? (
@@ -190,66 +188,48 @@ export const LoginScreen: React.FC<Props> = ({ route, navigation }) => {
 
           <View style={styles.inputGroup}>
             <TextInput
-              style={[styles.input, { paddingRight: 50 }]}
-              placeholder="Password"
+              style={styles.input}
+              placeholder="Contraseña"
               placeholderTextColor="rgba(255,255,255,0.4)"
-              secureTextEntry={!showPassword}
+              secureTextEntry
               value={password}
               onChangeText={setPassword}
             />
-            <TouchableOpacity
-              style={{ position: 'absolute', right: 15, top: 15 }}
-              onPress={() => setShowPassword(!showPassword)}
-            >
-              <Ionicons
-                name={showPassword ? 'eye-off' : 'eye'}
-                size={24}
-                color="rgba(255,255,255,0.4)"
-              />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.forgotPassword}>
-              <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
-            </TouchableOpacity>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <TextInput
+              style={styles.input}
+              placeholder="Confirmar Contraseña"
+              placeholderTextColor="rgba(255,255,255,0.4)"
+              secureTextEntry
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
           </View>
 
           <TouchableOpacity 
-            style={[styles.loginBtn, (!email || !password || loading) && { opacity: 0.7 }]} 
-            onPress={handleLogin}
-            disabled={!email || !password || loading}
+            style={[styles.registerBtn, (!email || !password || !confirmPassword || loading) && { opacity: 0.7 }]} 
+            onPress={handleRegister}
+            disabled={!email || !password || !confirmPassword || loading}
             activeOpacity={0.8}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.loginBtnText}>Login</Text>
+              <Text style={styles.registerBtnText}>Sign Up</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.footer}>
-            <Text style={styles.socialText}>or via social media</Text>
-
-            <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.socialIconBtn} activeOpacity={0.8}>
-                <Ionicons name="logo-google" size={20} color="#4ea8de" />
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.socialIconBtn} activeOpacity={0.8}>
-                <Ionicons name="logo-apple" size={20} color="#4ea8de" />
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.socialIconBtn} activeOpacity={0.8}>
-                <Ionicons name="logo-facebook" size={20} color="#4ea8de" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.registerRow}>
-              <Text style={styles.footerText}>¿No tienes una cuenta? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Register', { eventPreview })}>
-                <Text style={styles.registerText}>Sign Up</Text>
+            <View style={styles.loginRow}>
+              <Text style={styles.footerText}>¿Ya tienes una cuenta? </Text>
+              <TouchableOpacity onPress={() => navigation.goBack()}>
+                <Text style={styles.loginText}>Login</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -262,10 +242,12 @@ const styles = StyleSheet.create({
   },
   keyboardView: {
     flex: 1,
-    justifyContent: 'center',
   },
-  formContainer: {
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
     paddingHorizontal: 30,
+    paddingBottom: 40,
     width: width,
     maxWidth: 500,
     alignSelf: 'center',
@@ -273,9 +255,10 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 40,
     alignItems: 'center',
+    marginTop: 20,
   },
   title: {
-    fontSize: 56,
+    fontSize: 50,
     fontWeight: '800',
     color: '#ffffff',
     letterSpacing: 1.5,
@@ -306,24 +289,14 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(78, 168, 222, 0.3)', // Borde sutil azul
+    borderColor: 'rgba(78, 168, 222, 0.3)',
     borderRadius: 28,
     paddingHorizontal: 20,
     height: 55,
     color: '#FFF',
     fontSize: 16,
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginTop: 10,
-    marginRight: 10,
-  },
-  forgotText: {
-    color: '#4ea8de',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  loginBtn: {
+  registerBtn: {
     height: 55,
     borderRadius: 28,
     backgroundColor: '#3b82f6',
@@ -337,7 +310,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
   },
-  loginBtnText: {
+  registerBtnText: {
     color: '#ffffff',
     fontSize: 18,
     fontWeight: '700',
@@ -346,29 +319,7 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: 'center',
   },
-  socialText: {
-    color: '#4ea8de',
-    fontSize: 12,
-    fontWeight: '500',
-    marginBottom: 20,
-  },
-  socialRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 20,
-    marginBottom: 40,
-  },
-  socialIconBtn: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-    backgroundColor: '#0f172a',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  registerRow: {
+  loginRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -377,7 +328,7 @@ const styles = StyleSheet.create({
     color: '#a0a3b1',
     fontSize: 14,
   },
-  registerText: {
+  loginText: {
     color: '#3b82f6',
     fontSize: 14,
     fontWeight: 'bold',

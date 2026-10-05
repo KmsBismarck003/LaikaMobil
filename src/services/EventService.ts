@@ -35,7 +35,7 @@ export const EventService = {
     try {
       const response = await pilgrimApi.get('/events/public', { params: { limit: 100 } });
       
-      const baseUrl = process.env.EXPO_PUBLIC_PILGRIM_API_URL?.replace('/api', '') || 'http://192.168.1.3:8000';
+      const baseUrl = process.env.EXPO_PUBLIC_PILGRIM_API_URL?.replace('/api', '') || 'http://172.27.254.222:8000';
 
       return response.data.map((item: any) => {
         let imgUrl = item.image_url || undefined;
@@ -68,7 +68,7 @@ export const EventService = {
       const response = await pilgrimApi.get(`/events/${id}`);
       const item = response.data;
       
-      const baseUrl = process.env.EXPO_PUBLIC_PILGRIM_API_URL?.replace('/api', '') || 'http://192.168.1.3:8000';
+      const baseUrl = process.env.EXPO_PUBLIC_PILGRIM_API_URL?.replace('/api', '') || 'http://172.27.254.222:8000';
       let imgUrl = item.image_url || undefined;
       if (imgUrl && imgUrl.startsWith('/')) {
         imgUrl = `${baseUrl}${imgUrl}`;

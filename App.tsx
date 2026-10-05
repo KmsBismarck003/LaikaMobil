@@ -10,6 +10,7 @@ import { BlurView } from 'expo-blur';
 import { EventsScreen } from './src/screens/EventsScreen';
 import { EventDetailScreen } from './src/screens/EventDetailScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
+import { RegisterScreen } from './src/screens/RegisterScreen';
 import { CartScreen } from './src/screens/CartScreen';
 import { SuccessScreen } from './src/screens/SuccessScreen';
 import { MyTicketsScreen } from './src/screens/MyTicketsScreen';
@@ -48,6 +49,7 @@ export type RootStackParamList = {
   MainTabs: undefined;
   EventDetail: { eventId: string; eventTitle: string };
   Login: { eventPreview?: EventPreviewData };
+  Register: { eventPreview?: EventPreviewData };
   Cart: { user?: any; eventPreview?: EventPreviewData };
   Success: { userName: string; eventTitle: string; eventDate: string; quantity: number };
   Profile: undefined;
@@ -237,6 +239,16 @@ const RootNavigator = () => {
             options={{
               title: 'Iniciar Sesión',
               headerBackTitle: 'Atrás',
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+            }}
+          />
+          <Stack.Screen
+            name="Register"
+            component={RegisterScreen}
+            options={{
+              title: 'Regístrate',
+              headerShown: false,
               presentation: 'modal',
               animation: 'slide_from_bottom',
             }}
