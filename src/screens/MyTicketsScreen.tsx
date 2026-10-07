@@ -23,6 +23,7 @@ import { Feather } from '@expo/vector-icons';
 import { useAppTheme } from '../styles/ThemeProvider';
 import { TicketService, Ticket } from '../services/TicketService';
 import { getCurrentUser } from '../store/AuthStore';
+import { biometricService } from '../services/security/BiometricService';
 import { TicketActionModal } from '../components/TicketActionModal';
 import { TicketCard } from '../components/ui/TicketCard';
 import { Typography } from '../components/ui/Typography';
@@ -47,6 +48,7 @@ export const MyTicketsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('active');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [isUnlocked, setIsUnlocked] = useState(false);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const user = getCurrentUser();
@@ -58,10 +60,16 @@ export const MyTicketsScreen = () => {
       return;
     }
 
-    const fetchTickets = async () => {
+    const authenticateAndFetch = async () => {
       try {
-        const myTickets = await TicketService.getMyTickets(user.id);
-        setTickets(myTickets);
+        // Pedir biometría antes de cargar o mostrar
+        const success = await biometricService.authenticateUser('Desbloquea para ver tus boletos');
+        setIsUnlocked(success);
+
+        if (success) {
+          const myTickets = await TicketService.getMyTickets(user.id);
+          setTickets(myTickets);
+        }
       } catch (error) {
         console.error(error);
       } finally {
@@ -69,7 +77,7 @@ export const MyTicketsScreen = () => {
       }
     };
 
-    fetchTickets();
+    authenticateAndFetch();
   }, []);
 
   const displayedTickets = tickets.filter((t) => t.status === activeTab);
@@ -97,6 +105,48 @@ export const MyTicketsScreen = () => {
         subtitle="Inicia sesión para ver y gestionar tus boletos comprados."
         buttonText="Iniciar Sesión"
       />
+    );
+  }
+
+  // ── Bloqueado por Biometría ──────────────────────────────────────────────
+
+  if (!isUnlocked && user) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <View style={styles.emptyIconBox}>
+          <Feather name="lock" size={28} color={theme.colors.primary} />
+        </View>
+        <Typography variant="title" color={theme.colors.text} style={{ marginBottom: 8, marginTop: 16 }}>
+          Apartado Protegido
+        </Typography>
+        <Typography variant="body" color={theme.colors.textSecondary} align="center" style={{ marginBottom: 24 }}>
+          Tus boletos están bloqueados por seguridad.
+        </Typography>
+        <TouchableOpacity
+          style={[styles.tabItem, styles.tabItemActive, { paddingHorizontal: 24, paddingVertical: 12 }]}
+          activeOpacity={0.7}
+          onPress={async () => {
+            const success = await biometricService.authenticateUser('Desbloquea para ver tus boletos');
+            if (success) {
+              setIsUnlocked(true);
+              setLoading(true);
+              try {
+                const myTickets = await TicketService.getMyTickets(user.id);
+                setTickets(myTickets);
+              } catch (e) {
+                console.error(e);
+              } finally {
+                setLoading(false);
+              }
+            }
+          }}
+        >
+          <Feather name="unlock" size={18} color={theme.colors.primary} />
+          <Typography variant="body" weight="600" color={theme.colors.primary}>
+            Desbloquear Boletos
+          </Typography>
+        </TouchableOpacity>
+      </View>
     );
   }
 
