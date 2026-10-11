@@ -1,9 +1,30 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'axios';
 import { tokenService } from '../services/security/TokenService';
 import { sslPinningService } from '../services/security/SSLPinningService';
+import { Platform } from 'react-native';
 
 // Inicializar configuraciones de seguridad de bajo nivel (Pinning)
 sslPinningService.initializePinning();
+
+const getApiUrl = (envVar: string | undefined, name: string): string => {
+  if (!envVar) {
+    if (__DEV__) {
+      console.warn(`WARNING: ${name} is missing. Usando la IP local de prueba.`);
+      return name === 'EXPO_PUBLIC_PILGRIM_API_URL' ? 'http://192.168.1.7:8000/api' : 'http://192.168.1.7:8101';
+    } else {
+      throw new Error(`CRITICAL: Environment variable ${name} is required in production.`);
+    }
+  }
+  
+  if (__DEV__ && Platform.OS === 'android' && envVar.includes('localhost')) {
+    console.warn(`WARNING: Android emulators cannot connect to localhost. Use 10.0.2.2 or your machine's IP for ${name}.`);
+  }
+  
+  return envVar;
+};
+
+export const PILGRIM_API_URL = getApiUrl(process.env.EXPO_PUBLIC_PILGRIM_API_URL, 'EXPO_PUBLIC_PILGRIM_API_URL');
+export const USER_API_URL = getApiUrl(process.env.EXPO_PUBLIC_USER_API_URL, 'EXPO_PUBLIC_USER_API_URL');
 
 class HttpClient {
   private instance: AxiosInstance;
@@ -108,12 +129,8 @@ class HttpClient {
 }
 
 // Instanciamos los clientes y los exportamos para ser usados en la aplicación
-export const pilgrimApiClient = new HttpClient(
-  process.env.EXPO_PUBLIC_PILGRIM_API_URL || 'http://localhost:8000/api/v1'
-);
-export const userApiClient = new HttpClient(
-  process.env.EXPO_PUBLIC_USER_API_URL || 'http://localhost:8101'
-);
+export const pilgrimApiClient = new HttpClient(PILGRIM_API_URL);
+export const userApiClient = new HttpClient(USER_API_URL);
 
 // Mantenemos la compatibilidad con el código actual exportando la instancia directa de axios
 export const pilgrimApi = pilgrimApiClient.getInstance();

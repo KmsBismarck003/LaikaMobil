@@ -32,6 +32,7 @@ export type EventPreviewData = {
   functionId?: string | number | null;
   title: string;
   date: string;
+  time?: string;
   quantity: number;
   price: number;
   total: number;

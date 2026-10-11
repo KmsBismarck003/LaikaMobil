@@ -89,7 +89,7 @@ const Starfield = () => {
   ).current;
 
   return (
-    <View style={StyleSheet.absoluteFillObject}>
+    <View style={StyleSheet.absoluteFill}>
       {stars.map((s) => (
         <GlowingStar key={s.id} top={s.top} left={s.left} size={s.size} delay={s.delay} duration={s.duration} />
       ))}
@@ -107,13 +107,6 @@ export const LoginScreen: React.FC<Props> = ({ route, navigation }) => {
   const [errorMsg, setErrorMsg] = useState('');
 
   const validateInputs = () => {
-    // Validación de inyección SQL y caracteres especiales
-    const sqlInjectionPattern = /(['";=]|--|\b(SELECT|UNION|INSERT|UPDATE|DELETE|DROP)\b)/i;
-    if (sqlInjectionPattern.test(email) || sqlInjectionPattern.test(password)) {
-      setErrorMsg('Caracteres especiales no permitidos. Por favor, revisa tus datos.');
-      return false;
-    }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setErrorMsg('Por favor, ingresa un correo electrónico válido.');

@@ -1,7 +1,5 @@
 import axios from 'axios';
-
-// Usamos el mismo patrón de variables de entorno de Expo
-const PILGRIM_API_URL = process.env.EXPO_PUBLIC_PILGRIM_API_URL || 'http://localhost:8000/api';
+import { PILGRIM_API_URL } from '../api/config';
 
 const authApi = axios.create({
   baseURL: PILGRIM_API_URL,
@@ -16,7 +14,7 @@ export const AuthService = {
       const response = await authApi.post('/auth/login', { email, password });
       return response.data;
     } catch (error: any) {
-      console.error('Error in login:', error.response?.data || error.message);
+      console.warn('Error in login');
       
       const detail = error.response?.data?.detail;
       let errorMessage = 'No cuentas con una cuenta registrada o verifica tus datos.';
@@ -40,7 +38,7 @@ export const AuthService = {
       const response = await authApi.post('/auth/register', userData);
       return response.data;
     } catch (error: any) {
-      console.error('Error in register:', error.response?.data || error.message);
+      console.warn('Error in register');
       throw new Error(error.response?.data?.detail || 'No se pudo crear la cuenta. Verifica tus datos.');
     }
   },
@@ -51,7 +49,7 @@ export const AuthService = {
       });
       return response.data;
     } catch (error: any) {
-      console.error('Error in getMe:', error.response?.data || error.message);
+      console.warn('Error in getMe');
       throw error;
     }
   }

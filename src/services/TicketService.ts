@@ -1,8 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentToken } from '../store/AuthStore';
-
-const PILGRIM_API_URL = process.env.EXPO_PUBLIC_PILGRIM_API_URL || 'http://localhost:8000/api';
+import { PILGRIM_API_URL } from '../api/config';
 
 const ticketApi = axios.create({
   baseURL: PILGRIM_API_URL,

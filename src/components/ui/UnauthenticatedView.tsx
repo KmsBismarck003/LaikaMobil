@@ -84,7 +84,7 @@ const Starfield = () => {
   ).current;
 
   return (
-    <View style={StyleSheet.absoluteFillObject}>
+    <View style={StyleSheet.absoluteFill}>
       {stars.map((s) => (
         <GlowingStar key={s.id} top={s.top} left={s.left} size={s.size} delay={s.delay} duration={s.duration} />
       ))}

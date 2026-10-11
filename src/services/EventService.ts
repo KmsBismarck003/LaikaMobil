@@ -1,4 +1,4 @@
-import { pilgrimApi } from '../api/config';
+import { pilgrimApi, PILGRIM_API_URL } from '../api/config';
 
 export interface Event {
   id: string;
@@ -35,7 +35,7 @@ export const EventService = {
     try {
       const response = await pilgrimApi.get('/events/public', { params: { limit: 100 } });
       
-      const baseUrl = process.env.EXPO_PUBLIC_PILGRIM_API_URL?.replace('/api', '') || 'http://localhost:8000';
+      const baseUrl = PILGRIM_API_URL.replace('/api/v1', '').replace('/api', '');
 
       return response.data.map((item: any) => {
         let imgUrl = item.image_url || undefined;
@@ -68,7 +68,7 @@ export const EventService = {
       const response = await pilgrimApi.get(`/events/${id}`);
       const item = response.data;
       
-      const baseUrl = process.env.EXPO_PUBLIC_PILGRIM_API_URL?.replace('/api', '') || 'http://localhost:8000';
+      const baseUrl = PILGRIM_API_URL.replace('/api/v1', '').replace('/api', '');
       let imgUrl = item.image_url || undefined;
       if (imgUrl && imgUrl.startsWith('/')) {
         imgUrl = `${baseUrl}${imgUrl}`;

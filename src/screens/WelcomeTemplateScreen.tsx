@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,8 +7,8 @@ const { width, height } = Dimensions.get('window');
 
 // --- Componente de Estrella Resplandeciente ---
 const GlowingStar = ({ top, left, size, delay, duration }: any) => {
-  const opacity = useRef(new Animated.Value(0.1)).current;
-  const scale = useRef(new Animated.Value(0.8)).current;
+  const [opacity] = useState(() => new Animated.Value(0.1));
+  const [scale] = useState(() => new Animated.Value(0.8));
 
   useEffect(() => {
     const pulse = Animated.loop(
@@ -72,18 +72,20 @@ const GlowingStar = ({ top, left, size, delay, duration }: any) => {
 
 // --- Generador del Fondo de Estrellas ---
 const Starfield = () => {
-  // Generar 50 estrellas aleatorias
-  const stars = Array.from({ length: 50 }).map((_, i) => ({
-    id: i,
-    top: Math.random() * height,
-    left: Math.random() * width,
-    size: Math.random() * 3 + 1, // Tamaño entre 1 y 4
-    delay: Math.random() * 3000, // Delay hasta 3s
-    duration: 1500 + Math.random() * 2000, // Duración del pulso 1.5s - 3.5s
-  }));
+  // Generar 50 estrellas aleatorias solo en el montaje inicial
+  const stars = React.useMemo(() => {
+    return Array.from({ length: 50 }).map((_, i) => ({
+      id: i,
+      top: Math.random() * height,
+      left: Math.random() * width,
+      size: Math.random() * 3 + 1, // Tamaño entre 1 y 4
+      delay: Math.random() * 3000, // Delay hasta 3s
+      duration: 1500 + Math.random() * 2000, // Duración del pulso 1.5s - 3.5s
+    }));
+  }, []);
 
   return (
-    <View style={StyleSheet.absoluteFillObject}>
+    <View style={StyleSheet.absoluteFill}>
       {stars.map((s) => (
         <GlowingStar
           key={s.id}

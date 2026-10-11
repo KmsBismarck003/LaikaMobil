@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useAppTheme } from '../styles/ThemeProvider';
@@ -82,6 +83,8 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
   }, [user?.id]);
 
   const handlePayment = async () => {
+    if (!eventPreview) return;
+    
     if (isOffline) {
       Alert.alert('Sin Conexión', 'Perdiste la conexión a internet. Tus lugares están reservados hasta que el contador llegue a cero. Conéctate para pagar.');
       return;
@@ -93,6 +96,23 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
     }
 
     try {
+      // 1. Solicitar biometría o PIN para confirmar
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (hasHardware && isEnrolled) {
+        const authResult = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Autoriza tu compra',
+          cancelLabel: 'Cancelar',
+          fallbackLabel: 'Usar PIN/Contraseña',
+        });
+
+        if (!authResult.success) {
+          // El usuario canceló la compra o falló la autenticación
+          return;
+        }
+      }
+
       setLoading(true);
       
       // Simulando flujo real de pasarela (Crear Intent -> Confirmar)
@@ -102,7 +122,7 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
         paymentMethodId: selectedMethodId
       });
       
-      await PaymentService.confirmPayment(intentResponse.data.paymentId);
+      await PaymentService.confirmPayment(intentResponse.paymentId);
       
       // Construimos los items según el esquema esperado por el backend
       const purchaseItems = [];
@@ -125,7 +145,7 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
       await TicketService.purchaseTicket(user.id, {
         items: purchaseItems,
         paymentMethod: selectedMethodId === 'new' ? 'card' : 'card',
-        paymentId: intentResponse.data.paymentId || `pi_${Date.now()}`,
+        paymentId: intentResponse.paymentId || `pi_${Date.now()}`,
         idempotencyKey: idempotencyKey.current, // Evitamos doble cobro si se reconecta
         shippingInfo: null,
         shippingMethod: 'digital'

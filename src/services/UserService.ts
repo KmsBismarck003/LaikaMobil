@@ -13,7 +13,7 @@ export const UserService = {
       const response = await userApi.get(`/users/${userId}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching user from Java Microservice:', error);
+      console.warn('Error fetching user from Java Microservice');
       throw error;
     }
   },
@@ -25,7 +25,7 @@ export const UserService = {
         headers: { Authorization: `Bearer ${token}` }
       });
     } catch (error: any) {
-      console.error('Error deleting user from Java Microservice:', error.response?.data || error.message);
+      console.warn('Error deleting user from Java Microservice');
       throw error;
     }
   },
