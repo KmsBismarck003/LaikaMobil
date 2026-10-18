@@ -42,6 +42,16 @@ const getStatusConfig = (theme: any): Record<string, { color: string; label: str
     label: 'Usado',
     icon: 'archive',
   },
+  cancelled: {
+    color: theme.colors.error,
+    label: 'Cancelado',
+    icon: 'x-circle',
+  },
+  refunded: {
+    color: theme.colors.primary,
+    label: 'Reembolsado',
+    icon: 'rotate-ccw',
+  },
 });
 
 export const TicketCard: React.FC<TicketCardProps> = ({

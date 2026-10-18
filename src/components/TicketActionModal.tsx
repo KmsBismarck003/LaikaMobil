@@ -23,6 +23,7 @@ interface TicketActionModalProps {
   onClose: () => void;
   onViewItinerary: () => void;
   onViewTicket: () => void;
+  onRequestCancel?: () => void;
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -32,6 +33,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
   onClose,
   onViewItinerary,
   onViewTicket,
+  onRequestCancel,
 }) => {
   const styles = useStyles(createStyles);
   const { theme } = useAppTheme();
@@ -108,6 +110,28 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                   </View>
                   <Feather name="chevron-right" size={18} color={theme.colors.textTertiary} />
                 </TouchableOpacity>
+
+                {/* Solicitar Cancelación */}
+                {onRequestCancel && (
+                  <TouchableOpacity
+                    style={styles.actionItem}
+                    onPress={onRequestCancel}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.actionIcon, styles.actionIconCancel]}>
+                      <Feather name="rotate-ccw" size={18} color={theme.colors.error} />
+                    </View>
+                    <View style={styles.actionText}>
+                      <Typography variant="subheadline" color={theme.colors.text} weight="600">
+                        Solicitar Cancelación
+                      </Typography>
+                      <Typography variant="footnote" color={theme.colors.textSecondary}>
+                        Verificar reembolso y condiciones
+                      </Typography>
+                    </View>
+                    <Feather name="chevron-right" size={18} color={theme.colors.textTertiary} />
+                  </TouchableOpacity>
+                )}
               </View>
 
               {/* Cancelar */}
@@ -196,6 +220,10 @@ const createStyles = (theme: any) => StyleSheet.create({
   actionIconDisabled: {
     backgroundColor: theme.colors.surfaceHighlight,
     borderColor: theme.colors.borderFaint,
+  },
+  actionIconCancel: {
+    backgroundColor: theme.colors.errorFaint || 'rgba(239, 68, 68, 0.1)',
+    borderColor: theme.colors.errorGlow || 'rgba(239, 68, 68, 0.25)',
   },
   actionText: {
     flex: 1,

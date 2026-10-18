@@ -12,8 +12,8 @@ try {
 
 export const useNotifications = (navigationRef: NavigationContainerRef<any> | null) => {
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
-  const notificationListener = useRef<any>();
-  const responseListener = useRef<any>();
+  const notificationListener = useRef<any>(null);
+  const responseListener = useRef<any>(null);
 
   useEffect(() => {
     // Solo solicita token para fines de log/debug visual o si necesitamos enviarlo manualmente

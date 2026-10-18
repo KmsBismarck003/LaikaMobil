@@ -18,6 +18,7 @@ import {
   TouchableOpacity,
   Dimensions,
   NativeScrollEvent,
+  NativeSyntheticEvent,
   Animated,
   Platform,
 } from 'react-native';

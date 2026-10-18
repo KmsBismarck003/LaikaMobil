@@ -38,7 +38,7 @@ export const Typography: React.FC<TypographyProps> = ({
 }) => {
   const { theme } = useAppTheme();
   const { textScale } = useAccessibility();
-  const baseStyle = theme.typography[variant] ?? theme.typography.body;
+  const baseStyle: any = theme.typography[variant] ?? theme.typography.body;
 
   const dynamicFontSize = baseStyle.fontSize ? Math.round(baseStyle.fontSize * textScale) : undefined;
   const dynamicLineHeight = baseStyle.lineHeight ? Math.round(baseStyle.lineHeight * textScale) : undefined;

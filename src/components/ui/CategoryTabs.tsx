@@ -14,7 +14,7 @@ import { useStyles } from '../../styles/useStyles';
 interface CategoryTabItem {
   id: string;
   label: string;
-  icon: string;
+  icon?: string;
 }
 
 interface CategoryTabsProps {

@@ -32,22 +32,29 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useStyles } from '../styles/useStyles';
 import { UnauthenticatedView } from '../components/ui/UnauthenticatedView';
+import { CancelTicketModal } from '../components/CancelTicketModal';
+import { RefundRequestCard } from '../components/ui/RefundRequestCard';
+import { CancellationService, CancellationDetail } from '../services/CancellationService';
 
-type TabKey = 'active' | 'in_progress' | 'history';
+type TabKey = 'active' | 'in_progress' | 'history' | 'refunds';
 
 const TAB_CONFIG: { key: TabKey; label: string; icon: string }[] = [
-  { key: 'active',      label: 'Activos',   icon: 'check-circle' },
-  { key: 'in_progress', label: 'En Vivo',   icon: 'radio' },
-  { key: 'history',     label: 'Historial', icon: 'archive' },
+  { key: 'active',      label: 'Activos',       icon: 'check-circle' },
+  { key: 'in_progress', label: 'En Vivo',       icon: 'radio' },
+  { key: 'history',     label: 'Historial',     icon: 'archive' },
+  { key: 'refunds',     label: 'Cancelaciones', icon: 'rotate-ccw' },
 ];
 
 export const MyTicketsScreen = () => {
   const styles = useStyles(createStyles);
   const { theme } = useAppTheme();
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [refundRequests, setRefundRequests] = useState<CancellationDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('active');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [ticketToCancel, setTicketToCancel] = useState<Ticket | null>(null);
+  const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -67,8 +74,12 @@ export const MyTicketsScreen = () => {
         setIsUnlocked(success);
 
         if (success) {
-          const myTickets = await TicketService.getMyTickets(user.id);
+          const [myTickets, myReqs] = await Promise.all([
+            TicketService.getMyTickets(user.id),
+            CancellationService.getMyRequests(),
+          ]);
           setTickets(myTickets);
+          setRefundRequests(myReqs);
         }
       } catch (error) {
         console.error(error);
@@ -174,7 +185,10 @@ export const MyTicketsScreen = () => {
       <View style={styles.tabBar}>
         {TAB_CONFIG.map(({ key, label, icon }) => {
           const isActive = activeTab === key;
-          const count = tickets.filter((t) => t.status === key).length;
+          const count =
+            key === 'refunds'
+              ? refundRequests.length
+              : tickets.filter((t) => t.status === key).length;
 
           return (
             <TouchableOpacity
@@ -211,12 +225,27 @@ export const MyTicketsScreen = () => {
         })}
       </View>
 
-      {/* Lista de boletos */}
+      {/* Contenido según pestaña */}
       <ScrollView
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       >
-        {displayedTickets.length === 0 ? (
+        {activeTab === 'refunds' ? (
+          refundRequests.length === 0 ? (
+            <View style={styles.emptyTab}>
+              <View style={styles.emptyIconBox}>
+                <Feather name="rotate-ccw" size={28} color={theme.colors.textTertiary} />
+              </View>
+              <Typography variant="body" color={theme.colors.textSecondary} align="center">
+                No tienes solicitudes de cancelación o reembolso registradas.
+              </Typography>
+            </View>
+          ) : (
+            refundRequests.map((req) => (
+              <RefundRequestCard key={req.id} request={req} />
+            ))
+          )
+        ) : displayedTickets.length === 0 ? (
           <View style={styles.emptyTab}>
             <View style={styles.emptyIconBox}>
               <Feather name="inbox" size={28} color={theme.colors.textTertiary} />
@@ -249,6 +278,37 @@ export const MyTicketsScreen = () => {
             handleNavigateToPass(selectedTicket);
           }
           setSelectedTicket(null);
+        }}
+        onRequestCancel={() => {
+          const toCancel = selectedTicket;
+          setSelectedTicket(null);
+          setTicketToCancel(toCancel);
+          setIsCancelModalVisible(true);
+        }}
+      />
+
+      {/* Modal interactivo de cancelación y desglose de reembolso */}
+      <CancelTicketModal
+        visible={isCancelModalVisible}
+        ticket={ticketToCancel}
+        onClose={() => {
+          setIsCancelModalVisible(false);
+          setTicketToCancel(null);
+        }}
+        onSuccess={async () => {
+          if (user) {
+            try {
+              const [myTickets, myReqs] = await Promise.all([
+                TicketService.getMyTickets(user.id),
+                CancellationService.getMyRequests(),
+              ]);
+              setTickets(myTickets);
+              setRefundRequests(myReqs);
+              setActiveTab('refunds');
+            } catch (e) {
+              console.error('Error refreshing after cancellation:', e);
+            }
+          }
         }}
       />
     </View>
