@@ -4,13 +4,9 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useAppTheme } from '../styles/ThemeProvider';
 import QRCode from 'react-native-qrcode-svg';
+import { Feather } from '@expo/vector-icons';
 import { useStyles } from '../styles/useStyles';
-// Importamos react-native-qrcode-svg (necesitará instalación, si no, usamos un placeholder o instalamos el paquete)
-// Ya que la instalación de un módulo nativo/bridge puede romper Expo Go si no se reinicia, 
-// simularemos el QR con vistas por ahora o usaremos una imagen placeholder, pero lo ideal es react-native-qrcode-svg.
-// Vamos a sugerir el uso y si no, pintamos cuadros. Mejor usamos la imagen estática por ahora o un componente básico.
-// Dado el requerimiento "sin mocks", pero como QR es complejo sin librería, le agregaremos una librería QR si es posible.
-// Por seguridad en Expo Go, usaremos un "Dummy QR" estilizado y pediremos instalar `react-native-qrcode-svg` si se requiere funcional.
+import { CancelTicketModal } from '../components/CancelTicketModal';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TicketPass'>;
 
@@ -20,6 +16,7 @@ export const TicketPassScreen: React.FC<Props> = ({ route, navigation }) => {
   const styles = useStyles(createStyles);
   const { theme } = useAppTheme();
   const { ticket } = route.params;
+  const [isCancelModalVisible, setIsCancelModalVisible] = React.useState(false);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -84,6 +81,27 @@ export const TicketPassScreen: React.FC<Props> = ({ route, navigation }) => {
         </View>
 
       </View>
+
+      {ticket.status === 'active' && (
+        <TouchableOpacity
+          style={styles.cancelTicketButton}
+          onPress={() => setIsCancelModalVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Feather name="rotate-ccw" size={16} color={theme.colors.error} />
+          <Text style={styles.cancelTicketText}>Solicitar Cancelación y Reembolso</Text>
+        </TouchableOpacity>
+      )}
+
+      <CancelTicketModal
+        visible={isCancelModalVisible}
+        ticket={ticket}
+        onClose={() => setIsCancelModalVisible(false)}
+        onSuccess={() => {
+          setIsCancelModalVisible(false);
+          navigation.goBack();
+        }}
+      />
     </ScrollView>
   );
 };
@@ -252,5 +270,24 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: theme.colors.textSecondary,
     fontSize: 10,
     letterSpacing: 1,
+  },
+  cancelTicketButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: theme.borderRadius.l,
+    backgroundColor: theme.colors.surfaceHighlight,
+    borderWidth: 1,
+    borderColor: theme.colors.borderFaint,
+    width: '90%',
+  },
+  cancelTicketText: {
+    color: theme.colors.error,
+    fontWeight: '600',
+    fontSize: 14,
   },
 });
