@@ -52,6 +52,16 @@ const getStatusConfig = (theme: any): Record<string, { color: string; label: str
     label: 'Reembolsado',
     icon: 'rotate-ccw',
   },
+  transferred: {
+    color: theme.colors.textTertiary,
+    label: 'Transferido',
+    icon: 'arrow-right-circle',
+  },
+  transfer_pending: {
+    color: theme.colors.warning,
+    label: 'En Transferencia',
+    icon: 'clock',
+  },
 });
 
 export const TicketCard: React.FC<TicketCardProps> = ({

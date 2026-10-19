@@ -24,6 +24,7 @@ interface TicketActionModalProps {
   onViewItinerary: () => void;
   onViewTicket: () => void;
   onRequestCancel?: () => void;
+  onRequestTransfer?: () => void;
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -34,6 +35,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
   onViewItinerary,
   onViewTicket,
   onRequestCancel,
+  onRequestTransfer,
 }) => {
   const styles = useStyles(createStyles);
   const { theme } = useAppTheme();
@@ -110,6 +112,28 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                   </View>
                   <Feather name="chevron-right" size={18} color={theme.colors.textTertiary} />
                 </TouchableOpacity>
+
+                {/* Transferir Boleto (Criterio 1 y 2) */}
+                {onRequestTransfer && (
+                  <TouchableOpacity
+                    style={styles.actionItem}
+                    onPress={onRequestTransfer}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.actionIcon, styles.actionIconTransfer]}>
+                      <Feather name="send" size={18} color={theme.colors.primary} />
+                    </View>
+                    <View style={styles.actionText}>
+                      <Typography variant="subheadline" color={theme.colors.text} weight="600">
+                        Transferir Boleto
+                      </Typography>
+                      <Typography variant="footnote" color={theme.colors.textSecondary}>
+                        Enviar a otro usuario o generar invitación
+                      </Typography>
+                    </View>
+                    <Feather name="chevron-right" size={18} color={theme.colors.textTertiary} />
+                  </TouchableOpacity>
+                )}
 
                 {/* Solicitar Cancelación */}
                 {onRequestCancel && (
@@ -224,6 +248,10 @@ const createStyles = (theme: any) => StyleSheet.create({
   actionIconCancel: {
     backgroundColor: theme.colors.errorFaint || 'rgba(239, 68, 68, 0.1)',
     borderColor: theme.colors.errorGlow || 'rgba(239, 68, 68, 0.25)',
+  },
+  actionIconTransfer: {
+    backgroundColor: theme.colors.primaryFaint,
+    borderColor: theme.colors.primaryGlow,
   },
   actionText: {
     flex: 1,

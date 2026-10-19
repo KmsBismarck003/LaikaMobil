@@ -10,18 +10,20 @@
  *  - Estado vacío y estado sin sesión
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  RefreshControl,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useAppTheme } from '../styles/ThemeProvider';
-import { TicketService, Ticket } from '../services/TicketService';
+import { TicketService, Ticket, TicketTransfer } from '../services/TicketService';
 import { getCurrentUser } from '../store/AuthStore';
 import { biometricService } from '../services/security/BiometricService';
 import { TicketActionModal } from '../components/TicketActionModal';
@@ -33,6 +35,8 @@ import { RootStackParamList } from '../../App';
 import { useStyles } from '../styles/useStyles';
 import { UnauthenticatedView } from '../components/ui/UnauthenticatedView';
 import { CancelTicketModal } from '../components/CancelTicketModal';
+import { TransferTicketModal } from '../components/TransferTicketModal';
+import { IncomingTransferCard } from '../components/ui/IncomingTransferCard';
 import { RefundRequestCard } from '../components/ui/RefundRequestCard';
 import { CancellationService, CancellationDetail } from '../services/CancellationService';
 
@@ -50,16 +54,42 @@ export const MyTicketsScreen = () => {
   const { theme } = useAppTheme();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [refundRequests, setRefundRequests] = useState<CancellationDetail[]>([]);
+  const [incomingTransfers, setIncomingTransfers] = useState<TicketTransfer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('active');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [ticketToCancel, setTicketToCancel] = useState<Ticket | null>(null);
+  const [ticketToTransfer, setTicketToTransfer] = useState<Ticket | null>(null);
   const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
+  const [isTransferModalVisible, setIsTransferModalVisible] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const user = getCurrentUser();
   const insets = useSafeAreaInsets();
+
+  const loadData = useCallback(async () => {
+    if (!user) return;
+    try {
+      const [myTickets, myReqs, myIncoming] = await Promise.all([
+        TicketService.getMyTickets(user.id),
+        CancellationService.getMyRequests(),
+        TicketService.getIncomingTransfers(),
+      ]);
+      setTickets(myTickets);
+      setRefundRequests(myReqs);
+      setIncomingTransfers(myIncoming.filter((t) => t.status === 'PENDING'));
+    } catch (error) {
+      console.error('Error fetching tickets and transfers:', error);
+    }
+  }, [user]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     if (!user) {
@@ -69,17 +99,11 @@ export const MyTicketsScreen = () => {
 
     const authenticateAndFetch = async () => {
       try {
-        // Pedir biometría antes de cargar o mostrar
         const success = await biometricService.authenticateUser('Desbloquea para ver tus boletos');
         setIsUnlocked(success);
 
         if (success) {
-          const [myTickets, myReqs] = await Promise.all([
-            TicketService.getMyTickets(user.id),
-            CancellationService.getMyRequests(),
-          ]);
-          setTickets(myTickets);
-          setRefundRequests(myReqs);
+          await loadData();
         }
       } catch (error) {
         console.error(error);
@@ -89,9 +113,41 @@ export const MyTicketsScreen = () => {
     };
 
     authenticateAndFetch();
-  }, []);
+  }, [user, loadData]);
 
-  const displayedTickets = tickets.filter((t) => t.status === activeTab);
+  const handleAcceptTransfer = async (transfer: TicketTransfer) => {
+    try {
+      await TicketService.acceptTransfer(transfer.id);
+      Alert.alert('Boleto Aceptado', 'El boleto ha sido transferido a tu cuenta y se ha generado una nueva credencial con código QR.');
+      await loadData();
+      setActiveTab('active');
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'No se pudo aceptar la transferencia');
+    }
+  };
+
+  const handleRejectTransfer = async (transfer: TicketTransfer) => {
+    try {
+      await TicketService.rejectTransfer(transfer.id);
+      Alert.alert('Transferencia Rechazada', 'Has rechazado la transferencia del boleto.');
+      await loadData();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'No se pudo rechazar la transferencia');
+    }
+  };
+
+  const displayedTickets = tickets.filter((t) => {
+    if (activeTab === 'active') {
+      return t.status === 'active' || t.status === 'transfer_pending';
+    }
+    if (activeTab === 'in_progress') {
+      return t.status === 'in_progress';
+    }
+    if (activeTab === 'history') {
+      return t.status === 'history' || t.status === 'transferred' || t.status === 'cancelled' || t.status === 'refunded';
+    }
+    return false;
+  });
 
   const handleNavigateToPass = (ticket: Ticket) => {
     navigation.navigate('TicketPass', { ticket });
@@ -229,7 +285,35 @@ export const MyTicketsScreen = () => {
       <ScrollView
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
+          />
+        }
       >
+        {/* Sección de Transferencias Entrantes (Criterio 4) */}
+        {activeTab === 'active' && incomingTransfers.length > 0 && (
+          <View style={styles.incomingSection}>
+            <View style={styles.sectionHeader}>
+              <Feather name="gift" size={16} color={theme.colors.primary} />
+              <Typography variant="subheadline" weight="700" color={theme.colors.text}>
+                Transferencias Pendientes ({incomingTransfers.length})
+              </Typography>
+            </View>
+            {incomingTransfers.map((transfer) => (
+              <IncomingTransferCard
+                key={transfer.id}
+                transfer={transfer}
+                onAccept={handleAcceptTransfer}
+                onReject={handleRejectTransfer}
+              />
+            ))}
+          </View>
+        )}
+
         {activeTab === 'refunds' ? (
           refundRequests.length === 0 ? (
             <View style={styles.emptyTab}>
@@ -245,7 +329,7 @@ export const MyTicketsScreen = () => {
               <RefundRequestCard key={req.id} request={req} />
             ))
           )
-        ) : displayedTickets.length === 0 ? (
+        ) : displayedTickets.length === 0 && incomingTransfers.length === 0 ? (
           <View style={styles.emptyTab}>
             <View style={styles.emptyIconBox}>
               <Feather name="inbox" size={28} color={theme.colors.textTertiary} />
@@ -279,11 +363,38 @@ export const MyTicketsScreen = () => {
           }
           setSelectedTicket(null);
         }}
-        onRequestCancel={() => {
-          const toCancel = selectedTicket;
-          setSelectedTicket(null);
-          setTicketToCancel(toCancel);
-          setIsCancelModalVisible(true);
+        onRequestTransfer={
+          selectedTicket?.status === 'active'
+            ? () => {
+                const toTransfer = selectedTicket;
+                setSelectedTicket(null);
+                setTicketToTransfer(toTransfer);
+                setIsTransferModalVisible(true);
+              }
+            : undefined
+        }
+        onRequestCancel={
+          selectedTicket?.status === 'active'
+            ? () => {
+                const toCancel = selectedTicket;
+                setSelectedTicket(null);
+                setTicketToCancel(toCancel);
+                setIsCancelModalVisible(true);
+              }
+            : undefined
+        }
+      />
+
+      {/* Modal interactivo de transferencia de boletos (Criterios 1, 2, 8) */}
+      <TransferTicketModal
+        visible={isTransferModalVisible}
+        ticket={ticketToTransfer}
+        onClose={() => {
+          setIsTransferModalVisible(false);
+          setTicketToTransfer(null);
+        }}
+        onSuccess={async () => {
+          await loadData();
         }}
       />
 
@@ -296,19 +407,8 @@ export const MyTicketsScreen = () => {
           setTicketToCancel(null);
         }}
         onSuccess={async () => {
-          if (user) {
-            try {
-              const [myTickets, myReqs] = await Promise.all([
-                TicketService.getMyTickets(user.id),
-                CancellationService.getMyRequests(),
-              ]);
-              setTickets(myTickets);
-              setRefundRequests(myReqs);
-              setActiveTab('refunds');
-            } catch (e) {
-              console.error('Error refreshing after cancellation:', e);
-            }
-          }
+          await loadData();
+          setActiveTab('refunds');
         }}
       />
     </View>
@@ -389,6 +489,15 @@ const createStyles = (theme: any) => StyleSheet.create({
     padding: theme.spacing.l,
     paddingTop: theme.spacing.s,
     paddingBottom: theme.spacing.xxl,
+  },
+  incomingSection: {
+    marginBottom: theme.spacing.m,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    marginBottom: theme.spacing.s,
   },
   emptyTab: {
     paddingTop: theme.spacing.xxl,

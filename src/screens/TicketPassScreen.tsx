@@ -30,20 +30,54 @@ export const TicketPassScreen: React.FC<Props> = ({ route, navigation }) => {
 
       <View style={styles.ticketWrapper}>
         
-        {/* PARTE SUPERIOR (QR) */}
+        {/* PARTE SUPERIOR (QR O ESTADO REVOCADO/CONGELADO) */}
         <View style={styles.ticketTop}>
-          <Text style={styles.qrInstruction}>Escanea este código en la entrada</Text>
-          
-          <View style={styles.qrContainer}>
-            <QRCode
-              value={ticket.qrCode?.toString() || ticket.id?.toString() || 'laikaclub-ticket'}
-              size={200}
-              color={theme.colors.background}
-              backgroundColor={theme.colors.white}
-            />
-          </View>
+          {ticket.status === 'transferred' ? (
+            <View style={styles.revokedCard}>
+              <View style={styles.revokedIconBox}>
+                <Feather name="shield-off" size={32} color={theme.colors.error} />
+              </View>
+              <Text style={styles.revokedTitle}>Credencial Revocada</Text>
+              <Text style={styles.revokedDescription}>
+                Este boleto fue transferido a otro usuario. Su código QR ha sido permanentemente invalidado y ya no permite el acceso al evento.
+              </Text>
+            </View>
+          ) : ticket.status === 'transfer_pending' ? (
+            <View style={styles.pendingCard}>
+              <View style={styles.pendingIconBox}>
+                <Feather name="clock" size={32} color={theme.colors.warning} />
+              </View>
+              <Text style={styles.pendingTitle}>Transferencia en Proceso</Text>
+              <Text style={styles.pendingDescription}>
+                El boleto se encuentra congelado a la espera de que el destinatario acepte la transferencia. Su código QR permanecerá inactivo hasta que se resuelva la operación.
+              </Text>
+            </View>
+          ) : ticket.status === 'cancelled' || ticket.status === 'refunded' ? (
+            <View style={styles.revokedCard}>
+              <View style={styles.revokedIconBox}>
+                <Feather name="x-circle" size={32} color={theme.colors.error} />
+              </View>
+              <Text style={styles.revokedTitle}>Boleto Cancelado</Text>
+              <Text style={styles.revokedDescription}>
+                Este boleto fue cancelado y su acceso al evento ha sido completamente deshabilitado.
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.qrInstruction}>Escanea este código en la entrada</Text>
+              
+              <View style={styles.qrContainer}>
+                <QRCode
+                  value={ticket.qrCode?.toString() || ticket.id?.toString() || 'laikaclub-ticket'}
+                  size={200}
+                  color={theme.colors.background}
+                  backgroundColor={theme.colors.white}
+                />
+              </View>
 
-          <Text style={styles.ticketId}>ID: {ticket.id}</Text>
+              <Text style={styles.ticketId}>ID: {ticket.id}</Text>
+            </>
+          )}
         </View>
 
         {/* CORTES LATERALES Y LÍNEA PUNTEADA */}
@@ -71,9 +105,27 @@ export const TicketPassScreen: React.FC<Props> = ({ route, navigation }) => {
           <View style={styles.infoRow}>
             <View style={styles.infoCol}>
               <Text style={styles.infoLabel}>ESTADO</Text>
-              <View style={[styles.statusBadge, ticket.status === 'active' ? styles.statusActive : styles.statusUsed]}>
-                <Text style={styles.statusText}>
-                  {ticket.status === 'active' ? 'ACTIVO' : 'USADO'}
+              <View style={[
+                styles.statusBadge,
+                ticket.status === 'active' ? styles.statusActive :
+                ticket.status === 'transfer_pending' ? styles.statusWarning :
+                ticket.status === 'transferred' ? styles.statusMuted :
+                ticket.status === 'cancelled' ? styles.statusError :
+                styles.statusUsed
+              ]}>
+                <Text style={[
+                  styles.statusText,
+                  ticket.status === 'active' ? styles.statusTextActive :
+                  ticket.status === 'transfer_pending' ? styles.statusTextWarning :
+                  ticket.status === 'transferred' ? styles.statusTextMuted :
+                  ticket.status === 'cancelled' ? styles.statusTextError :
+                  styles.statusTextUsed
+                ]}>
+                  {ticket.status === 'active' ? 'ACTIVO' :
+                   ticket.status === 'transfer_pending' ? 'EN TRANSFERENCIA' :
+                   ticket.status === 'transferred' ? 'TRANSFERIDO' :
+                   ticket.status === 'cancelled' ? 'CANCELADO' :
+                   ticket.status === 'refunded' ? 'REEMBOLSADO' : 'USADO'}
                 </Text>
               </View>
             </View>
@@ -189,13 +241,98 @@ const createStyles = (theme: any) => StyleSheet.create({
   statusActive: {
     backgroundColor: theme.colors.successBackground,
   },
+  statusWarning: {
+    backgroundColor: theme.colors.warningFaint || 'rgba(245, 158, 11, 0.12)',
+  },
+  statusMuted: {
+    backgroundColor: theme.colors.surfaceHighlight,
+  },
+  statusError: {
+    backgroundColor: theme.colors.errorFaint || 'rgba(239, 68, 68, 0.12)',
+  },
   statusUsed: {
     backgroundColor: theme.colors.border,
   },
   statusText: {
-    color: theme.colors.success,
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  statusTextActive: {
+    color: theme.colors.success,
+  },
+  statusTextWarning: {
+    color: theme.colors.warning,
+  },
+  statusTextMuted: {
+    color: theme.colors.textTertiary,
+  },
+  statusTextError: {
+    color: theme.colors.error,
+  },
+  statusTextUsed: {
+    color: theme.colors.textSecondary,
+  },
+  revokedCard: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.m,
+    paddingHorizontal: theme.spacing.s,
+    width: '100%',
+  },
+  revokedIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: theme.colors.errorFaint || 'rgba(239, 68, 68, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.errorGlow || 'rgba(239, 68, 68, 0.25)',
+    marginBottom: theme.spacing.m,
+  },
+  revokedTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.error,
+    marginBottom: theme.spacing.s,
+    textAlign: 'center',
+  },
+  revokedDescription: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: theme.spacing.s,
+  },
+  pendingCard: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.m,
+    paddingHorizontal: theme.spacing.s,
+    width: '100%',
+  },
+  pendingIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: theme.colors.warningFaint || 'rgba(245, 158, 11, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.warningGlow || 'rgba(245, 158, 11, 0.25)',
+    marginBottom: theme.spacing.m,
+  },
+  pendingTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.warning,
+    marginBottom: theme.spacing.s,
+    textAlign: 'center',
+  },
+  pendingDescription: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: theme.spacing.s,
   },
   ticketDividerContainer: {
     flexDirection: 'row',
