@@ -27,7 +27,7 @@ import { TicketService } from '../services/TicketService';
 interface RedeemCourtesyModalProps {
   visible: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (claimedData?: any) => void;
 }
 
 export const RedeemCourtesyModal: React.FC<RedeemCourtesyModalProps> = ({
@@ -85,12 +85,12 @@ export const RedeemCourtesyModal: React.FC<RedeemCourtesyModalProps> = ({
     setErrorMsg(null);
 
     try {
-      await TicketService.claimCourtesyTicket(clean);
+      const res = await TicketService.claimCourtesyTicket(clean);
       setSuccessMsg('Boleto de cortesía canjeado con éxito');
       setTimeout(() => {
-        onSuccess();
+        onSuccess(res);
         onClose();
-      }, 1200);
+      }, 1000);
     } catch (err: any) {
       setErrorMsg(err.message || 'Error al canjear el código de cortesía');
       setSubmitting(false);

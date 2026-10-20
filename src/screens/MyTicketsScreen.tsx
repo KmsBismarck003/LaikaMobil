@@ -21,6 +21,7 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import { useAppTheme } from '../styles/ThemeProvider';
 import { TicketService, Ticket, TicketTransfer } from '../services/TicketService';
@@ -37,6 +38,7 @@ import { UnauthenticatedView } from '../components/ui/UnauthenticatedView';
 import { CancelTicketModal } from '../components/CancelTicketModal';
 import { TransferTicketModal } from '../components/TransferTicketModal';
 import { RedeemCourtesyModal } from '../components/RedeemCourtesyModal';
+import { CourtesyGiftModal } from '../components/CourtesyGiftModal';
 import { IncomingTransferCard } from '../components/ui/IncomingTransferCard';
 import { RefundRequestCard } from '../components/ui/RefundRequestCard';
 import { CancellationService, CancellationDetail } from '../services/CancellationService';
@@ -65,6 +67,7 @@ export const MyTicketsScreen = () => {
   const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
   const [isTransferModalVisible, setIsTransferModalVisible] = useState(false);
   const [isRedeemModalVisible, setIsRedeemModalVisible] = useState(false);
+  const [giftTicket, setGiftTicket] = useState<Ticket | any | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -82,6 +85,20 @@ export const MyTicketsScreen = () => {
       setTickets(myTickets);
       setRefundRequests(myReqs);
       setIncomingTransfers(myIncoming.filter((t) => t.status === 'PENDING'));
+
+      // Detección automática de cortesías no vistas para desplegar experiencia de regalo
+      try {
+        const seenStr = await AsyncStorage.getItem('@laika_seen_courtesies');
+        const seenIds: string[] = seenStr ? JSON.parse(seenStr) : [];
+        const unacknowledged = myTickets.find(
+          (t) => t.isCourtesy && t.status === 'active' && !seenIds.includes(t.id)
+        );
+        if (unacknowledged) {
+          setGiftTicket(unacknowledged);
+        }
+      } catch (err) {
+        console.error('Error checking seen courtesies in mobile:', err);
+      }
     } catch (error) {
       console.error('Error fetching tickets and transfers:', error);
     }
@@ -443,9 +460,53 @@ export const MyTicketsScreen = () => {
       <RedeemCourtesyModal
         visible={isRedeemModalVisible}
         onClose={() => setIsRedeemModalVisible(false)}
-        onSuccess={async () => {
+        onSuccess={async (claimedData) => {
           await loadData();
           setActiveTab('active');
+          if (claimedData) {
+            setGiftTicket(claimedData);
+          }
+        }}
+      />
+
+      {/* Modal de Revelación de Regalo / Invitación VIP */}
+      <CourtesyGiftModal
+        visible={!!giftTicket}
+        ticket={giftTicket}
+        onClose={async () => {
+          if (giftTicket?.id) {
+            try {
+              const seenStr = await AsyncStorage.getItem('@laika_seen_courtesies');
+              const seenIds: string[] = seenStr ? JSON.parse(seenStr) : [];
+              if (!seenIds.includes(giftTicket.id.toString())) {
+                await AsyncStorage.setItem(
+                  '@laika_seen_courtesies',
+                  JSON.stringify([...seenIds, giftTicket.id.toString()])
+                );
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          }
+          setGiftTicket(null);
+        }}
+        onOpenTicket={async (tkt) => {
+          if (tkt?.id) {
+            try {
+              const seenStr = await AsyncStorage.getItem('@laika_seen_courtesies');
+              const seenIds: string[] = seenStr ? JSON.parse(seenStr) : [];
+              if (!seenIds.includes(tkt.id.toString())) {
+                await AsyncStorage.setItem(
+                  '@laika_seen_courtesies',
+                  JSON.stringify([...seenIds, tkt.id.toString()])
+                );
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          }
+          setGiftTicket(null);
+          handleNavigateToPass(tkt);
         }}
       />
     </View>
