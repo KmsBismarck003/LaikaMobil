@@ -87,6 +87,14 @@ export const TicketCard: React.FC<TicketCardProps> = ({
         {/* Cabecera: evento + opciones */}
         <View style={styles.header}>
           <View style={styles.statusRow}>
+            {ticket.isCourtesy && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(139, 92, 246, 0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginRight: 6 }}>
+                <Feather name="gift" size={10} color="#a78bfa" style={{ marginRight: 4 }} />
+                <Typography variant="overline" color="#a78bfa" style={{ fontWeight: '800' }}>
+                  CORTESÍA
+                </Typography>
+              </View>
+            )}
             <Feather
               name={statusConfig.icon as any}
               size={12}

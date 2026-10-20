@@ -25,6 +25,7 @@ interface TicketActionModalProps {
   onViewTicket: () => void;
   onRequestCancel?: () => void;
   onRequestTransfer?: () => void;
+  isCourtesy?: boolean;
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -36,6 +37,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
   onViewTicket,
   onRequestCancel,
   onRequestTransfer,
+  isCourtesy = false,
 }) => {
   const styles = useStyles(createStyles);
   const { theme } = useAppTheme();
@@ -113,48 +115,66 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                   <Feather name="chevron-right" size={18} color={theme.colors.textTertiary} />
                 </TouchableOpacity>
 
-                {/* Transferir Boleto (Criterio 1 y 2) */}
-                {onRequestTransfer && (
-                  <TouchableOpacity
-                    style={styles.actionItem}
-                    onPress={onRequestTransfer}
-                    activeOpacity={0.8}
-                  >
-                    <View style={[styles.actionIcon, styles.actionIconTransfer]}>
-                      <Feather name="send" size={18} color={theme.colors.primary} />
+                {isCourtesy ? (
+                  <View style={[styles.actionItem, { backgroundColor: 'rgba(139, 92, 246, 0.08)', borderColor: 'rgba(139, 92, 246, 0.25)', borderWidth: 1 }]}>
+                    <View style={[styles.actionIcon, { backgroundColor: 'rgba(139, 92, 246, 0.2)' }]}>
+                      <Feather name="gift" size={18} color="#a78bfa" />
                     </View>
                     <View style={styles.actionText}>
-                      <Typography variant="subheadline" color={theme.colors.text} weight="600">
-                        Transferir Boleto
+                      <Typography variant="subheadline" color="#c4b5fd" weight="600">
+                        Boleto de Cortesía
                       </Typography>
-                      <Typography variant="footnote" color={theme.colors.textSecondary}>
-                        Enviar a otro usuario o generar invitación
+                      <Typography variant="footnote" color="#a78bfa">
+                        Acceso exclusivo e intransferible
                       </Typography>
                     </View>
-                    <Feather name="chevron-right" size={18} color={theme.colors.textTertiary} />
-                  </TouchableOpacity>
-                )}
+                  </View>
+                ) : (
+                  <>
+                    {/* Transferir Boleto (Criterio 1 y 2) */}
+                    {onRequestTransfer && (
+                      <TouchableOpacity
+                        style={styles.actionItem}
+                        onPress={onRequestTransfer}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[styles.actionIcon, styles.actionIconTransfer]}>
+                          <Feather name="send" size={18} color={theme.colors.primary} />
+                        </View>
+                        <View style={styles.actionText}>
+                          <Typography variant="subheadline" color={theme.colors.text} weight="600">
+                            Transferir Boleto
+                          </Typography>
+                          <Typography variant="footnote" color={theme.colors.textSecondary}>
+                            Enviar a otro usuario o generar invitación
+                          </Typography>
+                        </View>
+                        <Feather name="chevron-right" size={18} color={theme.colors.textTertiary} />
+                      </TouchableOpacity>
+                    )}
 
-                {/* Solicitar Cancelación */}
-                {onRequestCancel && (
-                  <TouchableOpacity
-                    style={styles.actionItem}
-                    onPress={onRequestCancel}
-                    activeOpacity={0.8}
-                  >
-                    <View style={[styles.actionIcon, styles.actionIconCancel]}>
-                      <Feather name="rotate-ccw" size={18} color={theme.colors.error} />
-                    </View>
-                    <View style={styles.actionText}>
-                      <Typography variant="subheadline" color={theme.colors.text} weight="600">
-                        Solicitar Cancelación
-                      </Typography>
-                      <Typography variant="footnote" color={theme.colors.textSecondary}>
-                        Verificar reembolso y condiciones
-                      </Typography>
-                    </View>
-                    <Feather name="chevron-right" size={18} color={theme.colors.textTertiary} />
-                  </TouchableOpacity>
+                    {/* Solicitar Cancelación */}
+                    {onRequestCancel && (
+                      <TouchableOpacity
+                        style={styles.actionItem}
+                        onPress={onRequestCancel}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[styles.actionIcon, styles.actionIconCancel]}>
+                          <Feather name="rotate-ccw" size={18} color={theme.colors.error} />
+                        </View>
+                        <View style={styles.actionText}>
+                          <Typography variant="subheadline" color={theme.colors.text} weight="600">
+                            Solicitar Cancelación
+                          </Typography>
+                          <Typography variant="footnote" color={theme.colors.textSecondary}>
+                            Verificar reembolso y condiciones
+                          </Typography>
+                        </View>
+                        <Feather name="chevron-right" size={18} color={theme.colors.textTertiary} />
+                      </TouchableOpacity>
+                    )}
+                  </>
                 )}
               </View>
 

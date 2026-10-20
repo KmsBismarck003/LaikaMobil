@@ -26,6 +26,8 @@ export interface Ticket {
   seatInfo?: string;
   qrCode?: string;
   price?: number;
+  isCourtesy?: boolean;
+  recipientType?: string;
 }
 
 export interface TicketTransfer {
@@ -70,12 +72,14 @@ export const TicketService = {
       if (response.data && Array.isArray(response.data)) {
         const parsedTickets = response.data.map((item: any) => ({
           id: item.id?.toString(),
-          eventName: item.event?.title || item.event_name || 'Evento Desconocido',
-          date: item.event?.date || item.date || '',
+          eventName: item.event?.title || item.event?.name || item.event_name || item.eventName || 'Evento Desconocido',
+          date: item.event?.date || item.date || item.purchase_date || '',
           status: item.status || 'history', 
-          seatInfo: item.seat_label || item.zone_name || 'General',
-          qrCode: item.qr_code || item.id?.toString(),
-          price: item.price || 0
+          seatInfo: item.seat_label || item.seat_id || item.zone_name || item.section_name || 'General',
+          qrCode: item.qr_code || item.qr_data || item.ticket_code || item.id?.toString(),
+          price: item.price || 0,
+          isCourtesy: Boolean(item.is_courtesy || item.isCourtesy),
+          recipientType: item.recipient_type || item.recipientType,
         }));
 
         // Guardamos en Caché Offline inmediatamente tras un fetch exitoso
@@ -202,6 +206,34 @@ export const TicketService = {
     } catch (error: any) {
       console.warn('Error fetching outgoing transfers:', error.message);
       return [];
+    }
+  },
+
+  /**
+   * Valida un código de canje de cortesía antes de reclamarlo.
+   */
+  validateCourtesyToken: async (claimToken: string): Promise<any> => {
+    try {
+      const response = await ticketApi.get(`/tickets/courtesy/validate-token/${claimToken.trim()}`);
+      return response.data;
+    } catch (error: any) {
+      const msg = error.response?.data?.message || error.message || 'Código de cortesía inválido o expirado';
+      throw new Error(msg);
+    }
+  },
+
+  /**
+   * Canjea un código de cortesía vinculándolo a la cuenta del usuario logueado.
+   */
+  claimCourtesyTicket: async (claimToken: string): Promise<any> => {
+    try {
+      const response = await ticketApi.post('/tickets/courtesy/claim', {
+        claim_token: claimToken.trim(),
+      });
+      return response.data;
+    } catch (error: any) {
+      const msg = error.response?.data?.message || error.message || 'Error al canjear boleto de cortesía';
+      throw new Error(msg);
     }
   },
 };

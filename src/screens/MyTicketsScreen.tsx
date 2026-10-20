@@ -36,6 +36,7 @@ import { useStyles } from '../styles/useStyles';
 import { UnauthenticatedView } from '../components/ui/UnauthenticatedView';
 import { CancelTicketModal } from '../components/CancelTicketModal';
 import { TransferTicketModal } from '../components/TransferTicketModal';
+import { RedeemCourtesyModal } from '../components/RedeemCourtesyModal';
 import { IncomingTransferCard } from '../components/ui/IncomingTransferCard';
 import { RefundRequestCard } from '../components/ui/RefundRequestCard';
 import { CancellationService, CancellationDetail } from '../services/CancellationService';
@@ -63,6 +64,7 @@ export const MyTicketsScreen = () => {
   const [ticketToTransfer, setTicketToTransfer] = useState<Ticket | null>(null);
   const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
   const [isTransferModalVisible, setIsTransferModalVisible] = useState(false);
+  const [isRedeemModalVisible, setIsRedeemModalVisible] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -232,8 +234,32 @@ export const MyTicketsScreen = () => {
             {tickets.length} {tickets.length === 1 ? 'boleto' : 'boletos'} en total
           </Typography>
         </View>
-        <View style={styles.ticketIconBadge}>
-          <Feather name="credit-card" size={20} color={theme.colors.primary} />
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: 'rgba(139, 92, 246, 0.15)',
+              borderWidth: 1,
+              borderColor: 'rgba(139, 92, 246, 0.4)',
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 12,
+              gap: 6,
+            }}
+            onPress={() => setIsRedeemModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Feather name="gift" size={14} color="#a78bfa" />
+            <Typography variant="footnote" color="#c4b5fd" weight="600">
+              Canjear
+            </Typography>
+          </TouchableOpacity>
+
+          <View style={styles.ticketIconBadge}>
+            <Feather name="credit-card" size={20} color={theme.colors.primary} />
+          </View>
         </View>
       </View>
 
@@ -353,6 +379,7 @@ export const MyTicketsScreen = () => {
       {/* Modal de opciones del boleto */}
       <TicketActionModal
         visible={!!selectedTicket}
+        isCourtesy={Boolean(selectedTicket?.isCourtesy)}
         onClose={() => setSelectedTicket(null)}
         onViewItinerary={() => {
           setSelectedTicket(null);
@@ -364,7 +391,7 @@ export const MyTicketsScreen = () => {
           setSelectedTicket(null);
         }}
         onRequestTransfer={
-          selectedTicket?.status === 'active'
+          selectedTicket?.status === 'active' && !selectedTicket?.isCourtesy
             ? () => {
                 const toTransfer = selectedTicket;
                 setSelectedTicket(null);
@@ -374,7 +401,7 @@ export const MyTicketsScreen = () => {
             : undefined
         }
         onRequestCancel={
-          selectedTicket?.status === 'active'
+          selectedTicket?.status === 'active' && !selectedTicket?.isCourtesy
             ? () => {
                 const toCancel = selectedTicket;
                 setSelectedTicket(null);
@@ -409,6 +436,16 @@ export const MyTicketsScreen = () => {
         onSuccess={async () => {
           await loadData();
           setActiveTab('refunds');
+        }}
+      />
+
+      {/* Modal de Canje de Cortesías */}
+      <RedeemCourtesyModal
+        visible={isRedeemModalVisible}
+        onClose={() => setIsRedeemModalVisible(false)}
+        onSuccess={async () => {
+          await loadData();
+          setActiveTab('active');
         }}
       />
     </View>
