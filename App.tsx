@@ -2,9 +2,9 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, Platform, StyleSheet } from 'react-native';
+import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Platform, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { EventsScreen } from './src/screens/EventsScreen';
@@ -66,121 +66,185 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-const TabItem: React.FC<{
-  name: any;
-  label: string;
-  focused: boolean;
-}> = ({ name, label, focused }) => {
+const CustomBottomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const { theme, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
+
+  const TAB_ITEMS: Record<string, { label: string; iconFocused: any; iconUnfocused: any }> = {
+    Eventos: {
+      label: 'Eventos',
+      iconFocused: 'compass',
+      iconUnfocused: 'compass-outline',
+    },
+    Carrito: {
+      label: 'Carrito',
+      iconFocused: 'cart',
+      iconUnfocused: 'cart-outline',
+    },
+    MisBoletos: {
+      label: 'Boletos',
+      iconFocused: 'ticket',
+      iconUnfocused: 'ticket-outline',
+    },
+    Perfil: {
+      label: 'Perfil',
+      iconFocused: 'person',
+      iconUnfocused: 'person-outline',
+    },
+  };
+
+  // Safe bottom offset to clear Android gesture bar & iOS home indicator
+  const bottomOffset = Math.max(insets.bottom + 6, Platform.OS === 'ios' ? 24 : 14);
+
   return (
-    <View style={tabItemStyles.container}>
+    <View style={[tabBarStyles.floatingWrapper, { bottom: bottomOffset }]} pointerEvents="box-none">
       <View
         style={[
-          tabItemStyles.iconBox,
-          focused && {
-            backgroundColor: isDark ? 'rgba(124, 92, 252, 0.24)' : 'rgba(107, 75, 224, 0.15)',
-            borderWidth: 1,
-            borderColor: isDark ? 'rgba(124, 92, 252, 0.45)' : 'rgba(107, 75, 224, 0.3)',
+          tabBarStyles.barContainer,
+          {
+            backgroundColor: isDark ? '#101014' : '#FFFFFF',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
           },
         ]}
       >
-        <Ionicons
-          name={name}
-          size={18}
-          color={focused ? theme.colors.primaryLight : theme.colors.textSecondary}
-        />
+        {state.routes.map((route, index) => {
+          const isFocused = state.index === index;
+          const item = TAB_ITEMS[route.name] || {
+            label: route.name,
+            iconFocused: 'square',
+            iconUnfocused: 'square-outline',
+          };
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          // Colores de icono y texto con alto contraste garantizado en light y dark
+          const activeColor = isDark ? '#FFFFFF' : theme.colors.primary;
+          const inactiveColor = isDark ? '#8E8E9E' : '#8E8E93';
+
+          return (
+            <TouchableOpacity
+              key={route.key}
+              onPress={onPress}
+              activeOpacity={0.75}
+              style={tabBarStyles.tabButton}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isFocused }}
+              accessibilityLabel={item.label}
+            >
+              {/* Cápsula del icono (resaltada solo en la pestaña activa) */}
+              <View
+                style={[
+                  tabBarStyles.iconBox,
+                  isFocused && {
+                    backgroundColor: isDark
+                      ? 'rgba(124, 92, 252, 0.28)'
+                      : 'rgba(107, 75, 224, 0.14)',
+                    borderWidth: 1,
+                    borderColor: isDark
+                      ? 'rgba(124, 92, 252, 0.45)'
+                      : 'rgba(107, 75, 224, 0.28)',
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={isFocused ? item.iconFocused : item.iconUnfocused}
+                  size={19}
+                  color={isFocused ? activeColor : inactiveColor}
+                />
+              </View>
+
+              {/* Etiqueta visible y de alto contraste siempre */}
+              <Typography
+                variant="footnote"
+                weight={isFocused ? '700' : '500'}
+                color={isFocused ? activeColor : inactiveColor}
+                style={tabBarStyles.tabText}
+                numberOfLines={1}
+              >
+                {item.label}
+              </Typography>
+            </TouchableOpacity>
+          );
+        })}
       </View>
-      <Typography
-        variant="footnote"
-        weight={focused ? '700' : '500'}
-        color={focused ? theme.colors.white : theme.colors.textSecondary}
-        style={tabItemStyles.label}
-        numberOfLines={1}
-      >
-        {label}
-      </Typography>
     </View>
   );
 };
 
-const tabItemStyles = StyleSheet.create({
-  container: {
+const tabBarStyles = StyleSheet.create({
+  floatingWrapper: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  barContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 14,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  tabButton: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 2,
-    minWidth: 58,
+    paddingVertical: 4,
   },
   iconBox: {
-    width: 38,
+    width: 44,
     height: 28,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
   },
-  label: {
-    fontSize: 10,
+  tabText: {
+    fontSize: 10.5,
     letterSpacing: 0.2,
+    marginTop: 1,
   },
 });
 
 import { useAccessibility } from './src/funciones/accesibilidad/useAccessibility';
 
 const MainTabs = () => {
-  const { theme, isDark } = useAppTheme();
+  const { theme } = useAppTheme();
   const { reduceMotion } = useAccessibility();
   return (
     <Tab.Navigator
+      tabBar={(props) => <CustomBottomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
         animation: reduceMotion ? 'none' : 'shift',
-        tabBarShowLabel: false,
-        tabBarStyle: {
-          position: 'absolute',
-          bottom: Platform.OS === 'ios' ? 28 : 16,
-          left: 16,
-          right: 16,
-          borderRadius: 34,
-          height: 66,
-          backgroundColor: isDark ? '#0C0C10' : '#FFFFFF',
-          borderTopWidth: 0,
-          elevation: 10,
-          overflow: 'hidden',
-          borderWidth: 1,
-          borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
-          shadowColor: '#000000',
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.35,
-          shadowRadius: 14,
-        },
-        tabBarBackground: () => (
-          <BlurView
-            tint={isDark ? 'dark' : 'light'}
-            intensity={90}
-            style={StyleSheet.absoluteFill}
-          />
-        ),
-        tabBarItemStyle: {
-          paddingVertical: 0,
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
       }}
     >
-      <Tab.Screen
-        name="Eventos"
-        component={EventsScreen}
-        options={{
-          headerShown: false,
-          tabBarIcon: ({ focused }) => (
-            <TabItem
-              name={focused ? 'compass' : 'compass-outline'}
-              label="Eventos"
-              focused={focused}
-            />
-          ),
-        }}
-      />
+      <Tab.Screen name="Eventos" component={EventsScreen} />
       <Tab.Screen
         name="Carrito"
         component={CartScreen as any}
@@ -190,43 +254,10 @@ const MainTabs = () => {
           headerTintColor: theme.colors.text,
           headerTitleStyle: { fontWeight: '700' },
           headerShadowVisible: false,
-          tabBarIcon: ({ focused }) => (
-            <TabItem
-              name={focused ? 'cart' : 'cart-outline'}
-              label="Carrito"
-              focused={focused}
-            />
-          ),
         }}
       />
-      <Tab.Screen
-        name="MisBoletos"
-        component={MyTicketsScreen}
-        options={{
-          headerShown: false,
-          tabBarIcon: ({ focused }) => (
-            <TabItem
-              name={focused ? 'ticket' : 'ticket-outline'}
-              label="Boletos"
-              focused={focused}
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Perfil"
-        component={ProfileScreen as any}
-        options={{
-          headerShown: false,
-          tabBarIcon: ({ focused }) => (
-            <TabItem
-              name={focused ? 'person' : 'person-outline'}
-              label="Perfil"
-              focused={focused}
-            />
-          ),
-        }}
-      />
+      <Tab.Screen name="MisBoletos" component={MyTicketsScreen} />
+      <Tab.Screen name="Perfil" component={ProfileScreen as any} />
     </Tab.Navigator>
   );
 };

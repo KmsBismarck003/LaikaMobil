@@ -151,25 +151,12 @@ export const EventsScreen: React.FC = () => {
               onPressExplore={() => console.log('Explore All')}
             />
 
-            {/* 4. Chips de categorías y botón flotante de configuración */}
-            <View style={styles.categoryRow}>
-              <View style={styles.categoryTabsWrapper}>
-                <CategoryTabs
-                  categories={CATEGORIES}
-                  selectedId={category}
-                  onSelect={setCategory}
-                />
-              </View>
-              <TouchableOpacity
-                style={styles.floatingSettingsBtn}
-                onPress={() => navigation.navigate('Settings')}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel="Abrir ajustes"
-              >
-                <Feather name="settings" size={17} color={theme.colors.white} />
-              </TouchableOpacity>
-            </View>
+            {/* 4. Chips de categorías */}
+            <CategoryTabs
+              categories={CATEGORIES}
+              selectedId={category}
+              onSelect={setCategory}
+            />
 
             {/* 5. Cabecera de sección: TODOS LOS EVENTOS + Contador badge */}
             <View style={styles.listHeader}>
@@ -357,32 +344,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   cardWrapper: {
     paddingHorizontal: theme.spacing.m,
   },
-  categoryRow: {
-    position: 'relative',
-    justifyContent: 'center',
-    marginVertical: 4,
-  },
-  categoryTabsWrapper: {
-    paddingRight: 60,
-  },
-  floatingSettingsBtn: {
-    position: 'absolute',
-    right: theme.spacing.m,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(56, 56, 68, 0.85)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.16)',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 4,
-    zIndex: 10,
-  },
+
   listHeader: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -280,48 +280,55 @@ export const MyTicketsScreen = () => {
         </View>
       </View>
 
-      {/* Tab bar */}
-      <View style={styles.tabBar}>
-        {TAB_CONFIG.map(({ key, label, icon }) => {
-          const isActive = activeTab === key;
-          const count =
-            key === 'refunds'
-              ? refundRequests.length
-              : tickets.filter((t) => t.status === key).length;
+      {/* Tab bar horizontal scrollable */}
+      <View style={styles.tabBarWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabBarScroll}
+        >
+          {TAB_CONFIG.map(({ key, label, icon }) => {
+            const isActive = activeTab === key;
+            const count =
+              key === 'refunds'
+                ? refundRequests.length
+                : tickets.filter((t) => t.status === key).length;
 
-          return (
-            <TouchableOpacity
-              key={key}
-              style={[styles.tabItem, isActive && styles.tabItemActive]}
-              onPress={() => setActiveTab(key)}
-              activeOpacity={0.7}
-            >
-              <Feather
-                name={icon as any}
-                size={14}
-                color={isActive ? theme.colors.primary : theme.colors.textTertiary}
-              />
-              <Typography
-                variant="footnote"
-                weight={isActive ? '700' : '500'}
-                color={isActive ? theme.colors.primary : theme.colors.textSecondary}
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[styles.tabItem, isActive && styles.tabItemActive]}
+                onPress={() => setActiveTab(key)}
+                activeOpacity={0.75}
               >
-                {label}
-              </Typography>
-              {count > 0 && (
-                <View style={[styles.countBadge, isActive && styles.countBadgeActive]}>
-                  <Typography
-                    variant="overline"
-                    color={isActive ? theme.colors.primary : theme.colors.textTertiary}
-                    style={styles.countText}
-                  >
-                    {count}
-                  </Typography>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
+                <Feather
+                  name={icon as any}
+                  size={14}
+                  color={isActive ? theme.colors.primary : theme.colors.textSecondary}
+                />
+                <Typography
+                  variant="footnote"
+                  weight={isActive ? '700' : '500'}
+                  color={isActive ? theme.colors.primary : theme.colors.textSecondary}
+                  style={styles.tabText}
+                >
+                  {label}
+                </Typography>
+                {count > 0 && (
+                  <View style={[styles.countBadge, isActive && styles.countBadgeActive]}>
+                    <Typography
+                      variant="overline"
+                      color={isActive ? theme.colors.primary : theme.colors.textSecondary}
+                      style={styles.countText}
+                    >
+                      {count}
+                    </Typography>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Contenido según pestaña */}
@@ -546,20 +553,22 @@ const createStyles = (theme: any) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabBar: {
-    flexDirection: 'row',
+  tabBarWrapper: {
+    paddingBottom: theme.spacing.s,
+  },
+  tabBarScroll: {
     paddingHorizontal: theme.spacing.l,
-    paddingBottom: theme.spacing.m,
-    gap: theme.spacing.xs,
+    gap: 8,
+    alignItems: 'center',
   },
   tabItem: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.l,
-    gap: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: theme.borderRadius.full,
+    gap: 6,
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
     borderColor: theme.colors.borderFaint,
@@ -568,25 +577,29 @@ const createStyles = (theme: any) => StyleSheet.create({
     backgroundColor: theme.colors.primaryFaint,
     borderColor: theme.colors.primaryGlow,
   },
+  tabText: {
+    letterSpacing: 0.2,
+  },
   countBadge: {
     backgroundColor: theme.colors.surfaceHighlight,
     borderRadius: theme.borderRadius.full,
-    paddingHorizontal: 5,
+    paddingHorizontal: 6,
     paddingVertical: 1,
-    minWidth: 18,
+    minWidth: 20,
     alignItems: 'center',
   },
   countBadgeActive: {
     backgroundColor: theme.colors.primaryGlow,
   },
   countText: {
-    fontSize: 9,
+    fontSize: 9.5,
     letterSpacing: 0,
+    fontWeight: '700',
   },
   listContent: {
     padding: theme.spacing.l,
     paddingTop: theme.spacing.s,
-    paddingBottom: theme.spacing.xxl,
+    paddingBottom: 110, // Suficiente espacio para no ocultarse detrás del dock flotante
   },
   incomingSection: {
     marginBottom: theme.spacing.m,

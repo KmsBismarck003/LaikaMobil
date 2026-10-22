@@ -31,18 +31,13 @@ export const PaymentService = {
       if (!userId) return [];
       const response = await paymentApi.get(`/users/${userId}/payment-methods`);
       
-      if (response.data && response.data.length > 0) {
+      if (Array.isArray(response.data)) {
         return response.data;
       }
-    } catch (error) {
-      console.warn('Error fetching payment methods, cayendo a mocks locales para pruebas', error);
+      return [];
+    } catch {
+      return [];
     }
-
-    // Fallback de prueba para que la pasarela no se bloquee en desarrollo
-    return [
-      { id: 'pm_1', brand: 'Visa', last4: '4242', expMonth: '12', expYear: '2025' },
-      { id: 'pm_2', brand: 'MasterCard', last4: '5555', expMonth: '10', expYear: '2024' }
-    ];
   },
 
   createIntent: async (paymentData: any) => {

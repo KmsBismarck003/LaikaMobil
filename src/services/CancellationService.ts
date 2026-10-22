@@ -81,8 +81,8 @@ export const CancellationService = {
         return response.data;
       }
       return [];
-    } catch (error: any) {
-      console.warn('Error al obtener solicitudes de cancelación:', error.message);
+    } catch {
+      // Retornar array vacío de forma limpia sin advertencias intrusivas cuando no hay sesión o token
       return [];
     }
   },

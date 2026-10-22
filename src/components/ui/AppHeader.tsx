@@ -1,7 +1,7 @@
 /**
  * Componente AppHeader — LaikaMobil
- * Cabecera superior con logotipo oficial de LAIKA CLUB y botón de acceso / usuario.
- * Diseño fiel al layout de cabecera con soporte para modo oscuro / claro y SafeAreaInsets.
+ * Cabecera superior con logotipo oficial dinámico (LogoOsc para modo oscuro, LogoClaro para modo claro)
+ * y botón de acceso / usuario con alto contraste en ambos temas.
  */
 
 import React from 'react';
@@ -22,18 +22,23 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onLoginPress,
   onProfilePress,
 }) => {
-  const { theme } = useAppTheme();
+  const { theme, isDark } = useAppTheme();
   const styles = useStyles(createStyles);
   const insets = useSafeAreaInsets();
   const user = useAuth();
 
+  // Selección inteligente del logotipo según el tema activo
+  const logoSource = isDark
+    ? require('../../../assets/LogoOsc.png')
+    : require('../../../assets/LogoClaro.png');
+
   return (
-    <View style={[styles.container, { paddingTop: Math.max(insets.top, 12) }]}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 10) }]}>
       <View style={styles.contentRow}>
-        {/* Logotipo oficial de LAIKA CLUB */}
+        {/* Logotipo oficial de LAIKA CLUB adaptado al tema */}
         <View style={styles.brandContainer}>
           <Image
-            source={require('../../../assets/logo.png')}
+            source={logoSource}
             style={styles.logoImage}
             resizeMode="contain"
             accessibilityLabel="LAIKA CLUB"
@@ -50,12 +55,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             accessibilityLabel="Ir a perfil"
           >
             <View style={styles.avatarCircle}>
-              <Feather name="user" size={14} color={theme.colors.primary} />
+              <Feather name="user" size={13} color={theme.colors.primary} />
             </View>
             <Typography
               variant="footnote"
               weight="bold"
-              color={theme.colors.white}
+              color={theme.colors.text}
               numberOfLines={1}
               style={styles.userNameText}
             >
@@ -64,17 +69,27 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={styles.authButton}
+            style={[
+              styles.authButton,
+              {
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(0, 0, 0, 0.18)',
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+              },
+            ]}
             onPress={onLoginPress}
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel="Iniciar sesión"
           >
-            <Feather name="user" size={14} color={theme.colors.white} />
+            <Feather
+              name="user"
+              size={13}
+              color={isDark ? theme.colors.white : theme.colors.text}
+            />
             <Typography
               variant="footnote"
               weight="bold"
-              color={theme.colors.white}
+              color={isDark ? theme.colors.white : theme.colors.text}
               style={styles.authButtonText}
             >
               Ingresa
@@ -99,29 +114,28 @@ const createStyles = (theme: any) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      height: 48,
+      height: 44,
     },
     brandContainer: {
       flexDirection: 'row',
       alignItems: 'center',
     },
     logoImage: {
-      width: 140,
-      height: 32,
+      width: 125,
+      height: 34,
     },
     authButton: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      paddingHorizontal: 16,
-      paddingVertical: 7,
+      paddingHorizontal: 14,
+      paddingVertical: 6,
       borderRadius: theme.borderRadius.full,
       borderWidth: 1,
-      borderColor: 'rgba(255, 255, 255, 0.28)',
-      backgroundColor: 'rgba(255, 255, 255, 0.06)',
     },
     authButtonText: {
       letterSpacing: 0.3,
+      fontSize: 12,
     },
     userButton: {
       flexDirection: 'row',
@@ -145,5 +159,6 @@ const createStyles = (theme: any) =>
     },
     userNameText: {
       maxWidth: 90,
+      fontSize: 12,
     },
   });
