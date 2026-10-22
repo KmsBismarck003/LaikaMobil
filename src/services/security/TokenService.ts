@@ -13,11 +13,14 @@ export class TokenService implements ITokenService {
   private readonly REFRESH_TOKEN_KEY = 'refresh_token';
 
   public async getAccessToken(): Promise<string | null> {
-    return await SecureStore.getItemAsync(this.ACCESS_TOKEN_KEY);
+    const directToken = await SecureStore.getItemAsync(this.ACCESS_TOKEN_KEY);
+    if (directToken) return directToken;
+    return await SecureStore.getItemAsync('token');
   }
 
   public async setAccessToken(token: string): Promise<void> {
     await SecureStore.setItemAsync(this.ACCESS_TOKEN_KEY, token);
+    await SecureStore.setItemAsync('token', token);
   }
 
   public async getRefreshToken(): Promise<string | null> {
@@ -31,6 +34,7 @@ export class TokenService implements ITokenService {
   public async clearTokens(): Promise<void> {
     await SecureStore.deleteItemAsync(this.ACCESS_TOKEN_KEY);
     await SecureStore.deleteItemAsync(this.REFRESH_TOKEN_KEY);
+    await SecureStore.deleteItemAsync('token');
   }
 }
 

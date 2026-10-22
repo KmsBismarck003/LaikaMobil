@@ -68,10 +68,10 @@ export const TicketPassScreen: React.FC<Props> = ({ route, navigation }) => {
               
               <View style={styles.qrContainer}>
                 <QRCode
-                  value={ticket.qrCode?.toString() || ticket.id?.toString() || 'laikaclub-ticket'}
+                  value={ticket.qrCode?.toString() || ticket.ticketCode || ticket.id?.toString() || 'laikaclub-ticket'}
                   size={200}
-                  color={theme.colors.background}
-                  backgroundColor={theme.colors.white}
+                  color="#000000"
+                  backgroundColor="#FFFFFF"
                 />
               </View>
 
@@ -378,10 +378,19 @@ const createStyles = (theme: any) => StyleSheet.create({
     marginBottom: theme.spacing.l,
   },
   qrContainer: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: '#FFFFFF',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: theme.spacing.m,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
   },
   qrMock: {
     width: 200,

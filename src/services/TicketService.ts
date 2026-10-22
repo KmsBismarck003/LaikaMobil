@@ -25,6 +25,7 @@ export interface Ticket {
   status: 'active' | 'in_progress' | 'history' | 'cancelled' | 'refunded' | 'transferred' | 'transfer_pending' | string;
   seatInfo?: string;
   qrCode?: string;
+  ticketCode?: string;
   price?: number;
   isCourtesy?: boolean;
   recipientType?: string;
@@ -77,6 +78,7 @@ export const TicketService = {
           status: item.status || 'history', 
           seatInfo: item.seat_label || item.seat_id || item.zone_name || item.section_name || 'General',
           qrCode: item.qr_code || item.qr_data || item.ticket_code || item.id?.toString(),
+          ticketCode: item.ticket_code || item.ticketCode || item.code || item.qr_code,
           price: item.price || 0,
           isCourtesy: Boolean(item.is_courtesy || item.isCourtesy),
           recipientType: item.recipient_type || item.recipientType,

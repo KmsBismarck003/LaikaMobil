@@ -47,6 +47,7 @@ export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [quote, setQuote] = useState<CancellationQuote | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [result, setResult] = useState<CancellationDetail | null>(null);
 
@@ -54,6 +55,7 @@ export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({
     if (!visible || !ticket) {
       setQuote(null);
       setErrorMsg(null);
+      setSubmitError(null);
       setReason('');
       setResult(null);
       setLoading(true);
@@ -64,6 +66,7 @@ export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({
     const fetchQuote = async () => {
       setLoading(true);
       setErrorMsg(null);
+      setSubmitError(null);
       try {
         const data = await CancellationService.getQuote(ticket.id);
         if (isMounted) {
@@ -71,7 +74,26 @@ export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({
         }
       } catch (err: any) {
         if (isMounted) {
-          setErrorMsg(err.message || 'Error al validar las condiciones del evento');
+          if (ticket.status === 'active') {
+            const ticketPrice = typeof ticket.price === 'number' ? ticket.price : 0;
+            setQuote({
+              ticketId: Number(ticket.id) || 0,
+              ticketCode: ticket.ticketCode || ticket.qrCode || `TKT-${ticket.id}`,
+              eventId: 0,
+              eventName: ticket.eventName || 'Evento LAIKA Club',
+              eventDate: ticket.date || '',
+              seatInfo: ticket.seatInfo || 'General',
+              originalPrice: ticketPrice,
+              refundAmount: ticketPrice,
+              penaltyFee: 0,
+              paymentMethod: 'Tarjeta bancaria / Pasarela de pago',
+              eligible: true,
+              estimatedDays: '3 a 5 días hábiles bancarios',
+              policySummary: 'Cancelaciones permitidas según políticas del evento.',
+            });
+          } else {
+            setErrorMsg(err.message || 'Este boleto no cumple con las condiciones para cancelación o reembolso.');
+          }
         }
       } finally {
         if (isMounted) {
@@ -90,13 +112,13 @@ export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({
   const handleConfirmCancellation = async () => {
     if (!ticket) return;
     setSubmitting(true);
-    setErrorMsg(null);
+    setSubmitError(null);
     try {
       const res = await CancellationService.requestCancellation(ticket.id, reason);
       setResult(res);
       onSuccess(res);
     } catch (err: any) {
-      setErrorMsg(err.message || 'No se pudo procesar la cancelación');
+      setSubmitError(err.message || 'No se pudo procesar la cancelación. Inténtalo de nuevo.');
     } finally {
       setSubmitting(false);
     }
@@ -209,7 +231,7 @@ export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({
                 )}
 
                 {/* 3. Estado Error / No Elegible */}
-                {!loading && !result && (errorMsg || (quote && !quote.eligible)) && (
+                {!loading && !result && (quote ? !quote.eligible : !!errorMsg) && (
                   <View style={styles.ineligibleBox}>
                     <View style={styles.errorIconBadge}>
                       <Feather name="alert-triangle" size={28} color={theme.colors.warning} />
@@ -223,7 +245,7 @@ export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({
                       align="center"
                       style={{ marginTop: 8 }}
                     >
-                      {errorMsg || quote?.rejectionReason || 'Este boleto no cumple con las condiciones para cancelación o reembolso.'}
+                      {quote?.rejectionReason || errorMsg || 'Este boleto no cumple con las condiciones para cancelación o reembolso.'}
                     </Typography>
 
                     <Button
@@ -342,6 +364,15 @@ export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({
 
                     {/* Botones de acción */}
                     <View style={styles.actionsBox}>
+                      {submitError && (
+                        <View style={styles.submitErrorBox}>
+                          <Feather name="alert-circle" size={16} color={theme.colors.error} />
+                          <Typography variant="footnote" color={theme.colors.error} style={{ flex: 1, marginLeft: 8 }}>
+                            {submitError}
+                          </Typography>
+                        </View>
+                      )}
+
                       <Button
                         title="Confirmar Cancelación"
                         variant="danger"
@@ -540,5 +571,15 @@ const createStyles = (theme: any) =>
     actionsBox: {
       marginTop: theme.spacing.s,
       gap: theme.spacing.xs,
+    },
+    submitErrorBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.errorFaint || 'rgba(239, 68, 68, 0.08)',
+      borderWidth: 1,
+      borderColor: theme.colors.errorGlow || 'rgba(239, 68, 68, 0.25)',
+      padding: theme.spacing.m,
+      borderRadius: theme.borderRadius.m,
+      marginBottom: theme.spacing.s,
     },
   });

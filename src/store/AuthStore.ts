@@ -10,10 +10,15 @@ const listeners = new Set<() => void>();
 export const loadSession = async () => {
   try {
     const userStr = await AsyncStorage.getItem('user');
-    const token = await SecureStore.getItemAsync('token');
+    let token = await SecureStore.getItemAsync('token');
+    if (!token) {
+      token = await SecureStore.getItemAsync('access_token');
+    }
     if (userStr && token) {
       currentUser = JSON.parse(userStr);
       currentToken = token;
+      await SecureStore.setItemAsync('token', token);
+      await SecureStore.setItemAsync('access_token', token);
       listeners.forEach(l => l());
       
       // Sincronización en segundo plano con el backend
@@ -47,6 +52,7 @@ export const setCurrentUser = async (user: any, token?: string) => {
     if (user && currentToken) {
       await AsyncStorage.setItem('user', JSON.stringify(user));
       await SecureStore.setItemAsync('token', currentToken);
+      await SecureStore.setItemAsync('access_token', currentToken);
       
       // Registrar el token push al iniciar sesión
       NotificationService.setupPushToken(user.id);
@@ -64,6 +70,7 @@ export const logout = async () => {
   try {
     await AsyncStorage.removeItem('user');
     await SecureStore.deleteItemAsync('token');
+    await SecureStore.deleteItemAsync('access_token');
     
     // Limpiar el token de notificaciones push local y remoto
     await NotificationService.clearPushToken();

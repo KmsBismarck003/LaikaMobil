@@ -48,7 +48,11 @@ export const CancellationService = {
       const response = await pilgrimApi.get<CancellationQuote>(`/refunds/quote/${ticketId}`);
       return response.data;
     } catch (error: any) {
-      const msg = error.response?.data?.message || error.message || 'No se pudo obtener la cotización de cancelación';
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
+        error.message ||
+        'No se pudo obtener la cotización de cancelación';
       throw new Error(msg);
     }
   },
@@ -58,14 +62,19 @@ export const CancellationService = {
    */
   requestCancellation: async (ticketId: string | number, reason?: string): Promise<CancellationDetail> => {
     try {
+      const parsedId = !isNaN(Number(ticketId)) ? Number(ticketId) : ticketId;
       const response = await pilgrimApi.post<CancellationDetail>('/refunds/request', {
-        ticket_id: Number(ticketId),
-        ticketId: Number(ticketId),
+        ticket_id: parsedId,
+        ticketId: parsedId,
         reason: reason || 'Cancelación solicitada por el usuario desde LaikaMobil',
       });
       return response.data;
     } catch (error: any) {
-      const msg = error.response?.data?.message || error.message || 'Error al procesar la cancelación del boleto';
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
+        error.message ||
+        'Error al procesar la cancelación del boleto';
       throw new Error(msg);
     }
   },

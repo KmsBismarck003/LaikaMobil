@@ -51,7 +51,15 @@ class HttpClient {
     // Interceptor de Request: Adjunta el Token de Acceso
     this.instance.interceptors.request.use(
       async (config: InternalAxiosRequestConfig) => {
-        const token = await tokenService.getAccessToken();
+        let token = await tokenService.getAccessToken();
+        if (!token) {
+          try {
+            const { getCurrentToken } = require('../store/AuthStore');
+            token = getCurrentToken();
+          } catch {
+            // Ignorar si AuthStore no está disponible aún
+          }
+        }
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -86,7 +94,8 @@ class HttpClient {
           try {
             const refreshToken = await tokenService.getRefreshToken();
             if (!refreshToken) {
-              throw new Error('No refresh token available');
+              this.isRefreshing = false;
+              return Promise.reject(error);
             }
 
             // Petición para obtener un nuevo token (Endpoint asimilado)
