@@ -249,11 +249,7 @@ const MainTabs = () => {
         name="Carrito"
         component={CartScreen as any}
         options={{
-          headerShown: true,
-          headerStyle: { backgroundColor: theme.colors.surfaceElevated },
-          headerTintColor: theme.colors.text,
-          headerTitleStyle: { fontWeight: '700' },
-          headerShadowVisible: false,
+          headerShown: false,
         }}
       />
       <Tab.Screen name="MisBoletos" component={MyTicketsScreen} />
