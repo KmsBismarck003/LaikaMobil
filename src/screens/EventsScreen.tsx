@@ -36,6 +36,7 @@ import { Button } from '../components/ui/Button';
 import { useStyles } from '../styles/useStyles';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { OfflineStateView } from '../components/ui/OfflineStateView';
+import { AppHeader } from '../components/ui/AppHeader';
 
 const CATEGORIES = [
   { id: '',         label: 'Destacados' },
@@ -45,7 +46,7 @@ const CATEGORIES = [
   { id: 'festival', label: 'Festivales' },
 ];
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'EventDetail'>;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export const EventsScreen: React.FC = () => {
   const { theme } = useAppTheme();
@@ -123,45 +124,67 @@ export const EventsScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {/* 1. Cabecera superior fija con logotipo oficial y acceso */}
+      <AppHeader
+        onLoginPress={() => navigation.navigate('Login', {})}
+        onProfilePress={() => navigation.navigate('Profile')}
+      />
+
       <FlatList
         data={events}
         keyExtractor={(item) => item.id.toString()}
         ListHeaderComponent={
           <>
-            <View style={{ position: 'relative' }}>
-              <HeroCarousel
-                events={events.slice(0, 5)}
-                onPressEvent={(event) =>
-                  handleEventPress(event.id, event.title)
-                }
-                onPressExplore={() => console.log('Explore All')}
-              />
-              <GlassSearchBar
-                date={date}
-                location={location}
-                onSearchPress={() => setIsSearchVisible(true)}
-              />
-            </View>
-
-            <CategoryTabs
-              categories={CATEGORIES}
-              selectedId={category}
-              onSelect={setCategory}
+            {/* 2. Barra de búsqueda y filtros segmentada de alto contraste */}
+            <GlassSearchBar
+              date={date}
+              location={location}
+              onSearchPress={() => setIsSearchVisible(true)}
             />
 
+            {/* 3. HeroCarousel de eventos destacados */}
+            <HeroCarousel
+              events={events.slice(0, 5)}
+              onPressEvent={(event) =>
+                handleEventPress(event.id, event.title)
+              }
+              onPressExplore={() => console.log('Explore All')}
+            />
+
+            {/* 4. Chips de categorías y botón flotante de configuración */}
+            <View style={styles.categoryRow}>
+              <View style={styles.categoryTabsWrapper}>
+                <CategoryTabs
+                  categories={CATEGORIES}
+                  selectedId={category}
+                  onSelect={setCategory}
+                />
+              </View>
+              <TouchableOpacity
+                style={styles.floatingSettingsBtn}
+                onPress={() => navigation.navigate('Settings')}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Abrir ajustes"
+              >
+                <Feather name="settings" size={17} color={theme.colors.white} />
+              </TouchableOpacity>
+            </View>
+
+            {/* 5. Cabecera de sección: TODOS LOS EVENTOS + Contador badge */}
             <View style={styles.listHeader}>
               <Typography
                 variant="overline"
                 color={theme.colors.text}
-                weight="700"
+                weight="bold"
                 style={styles.listTitle}
               >
                 {category
-                  ? CATEGORIES.find((c) => c.id === category)?.label ?? 'Eventos'
-                  : 'Todos los eventos'}
+                  ? (CATEGORIES.find((c) => c.id === category)?.label ?? 'EVENTOS').toUpperCase()
+                  : 'TODOS LOS EVENTOS'}
               </Typography>
               <View style={styles.countBadge}>
-                <Typography variant="overline" color={theme.colors.textSecondary}>
+                <Typography variant="overline" weight="bold" color={theme.colors.textSecondary}>
                   {events.length}
                 </Typography>
               </View>
@@ -169,10 +192,12 @@ export const EventsScreen: React.FC = () => {
           </>
         }
         renderItem={({ item }) => (
-          <EventCard
-            event={item}
-            onPress={() => handleEventPress(item.id, item.title)}
-          />
+          <View style={styles.cardWrapper}>
+            <EventCard
+              event={item}
+              onPress={() => handleEventPress(item.id, item.title)}
+            />
+          </View>
         )}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -327,24 +352,56 @@ const createStyles = (theme: any) => StyleSheet.create({
     lineHeight: 22,
   },
   listContent: {
+    paddingBottom: 110, // Extra padding for the floating tab bar
+  },
+  cardWrapper: {
     paddingHorizontal: theme.spacing.m,
-    paddingBottom: 100, // Extra padding for the floating tab bar
+  },
+  categoryRow: {
+    position: 'relative',
+    justifyContent: 'center',
+    marginVertical: 4,
+  },
+  categoryTabsWrapper: {
+    paddingRight: 60,
+  },
+  floatingSettingsBtn: {
+    position: 'absolute',
+    right: theme.spacing.m,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(56, 56, 68, 0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.16)',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 4,
+    zIndex: 10,
   },
   listHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: theme.spacing.m,
-    paddingHorizontal: theme.spacing.xs,
+    paddingVertical: 12,
+    paddingHorizontal: theme.spacing.m,
   },
   listTitle: {
     letterSpacing: 1.5,
+    fontSize: 11,
   },
   countBadge: {
     backgroundColor: theme.colors.surfaceHighlight,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xxs + 1,
-    borderRadius: theme.borderRadius.full,
+    minWidth: 26,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
     borderWidth: 1,
     borderColor: theme.colors.borderFaint,
   },

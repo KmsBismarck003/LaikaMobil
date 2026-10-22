@@ -175,27 +175,29 @@ const createSlideStyles = (theme: any) => StyleSheet.create({
   content: {
     flex: 1,
     padding: theme.spacing.l,
+    paddingBottom: 38,
     justifyContent: 'flex-end',
   },
   infoWrapper: {
     alignItems: 'center',
     gap: theme.spacing.s,
-    marginBottom: theme.spacing.l,
-  },
-  topText: {
-    letterSpacing: 0.5,
-    fontSize: 10,
     marginBottom: 4,
   },
+  topText: {
+    letterSpacing: 0.8,
+    fontSize: 10.5,
+    marginBottom: 4,
+    fontWeight: '700',
+  },
   title: {
-    fontSize: 32,
-    lineHeight: 36,
+    fontSize: 28,
+    lineHeight: 32,
     fontWeight: '900',
     fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-condensed',
-    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowColor: 'rgba(0,0,0,0.85)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 10,
-    marginBottom: theme.spacing.m,
+    marginBottom: theme.spacing.s,
   },
   ctaRow: {
     flexDirection: 'row',
@@ -204,9 +206,14 @@ const createSlideStyles = (theme: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: 12,
+    paddingHorizontal: 26,
     borderRadius: theme.borderRadius.full,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
   },
 });
 
@@ -326,17 +333,17 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
 
 const createStyles = (theme: any) => StyleSheet.create({
   container: {
-    height: SLIDE_HEIGHT + 24, // extra space for dots below
-    backgroundColor: theme.colors.background, // Match app background, not black
-    paddingTop: theme.spacing.m,
+    height: SLIDE_HEIGHT,
+    backgroundColor: theme.colors.background,
+    paddingTop: 4,
+    paddingBottom: 4,
   },
   dotsContainer: {
     position: 'absolute',
-    bottom: 0, // place at the bottom of the container, outside the image
+    bottom: 20,
     left: 0,
     right: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
   },
 });

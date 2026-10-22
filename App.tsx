@@ -26,6 +26,7 @@ import { AccessibilityProvider } from './src/funciones/accesibilidad';
 import { AchievementsScreen } from './src/screens/AchievementsScreen';
 import { useNotifications } from './src/funciones/notificaciones';
 import { AnimatedSplashScreen } from './src/screens/AnimatedSplashScreen';
+import { Typography } from './src/components/ui/Typography';
 
 export type EventPreviewData = {
   eventId: string;
@@ -65,29 +66,63 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-const TabIcon: React.FC<{ name: any; color: string; size: number; focused: boolean }> = ({
-  name,
-  size,
-  focused,
-}) => {
-  const { theme } = useAppTheme();
+const TabItem: React.FC<{
+  name: any;
+  label: string;
+  focused: boolean;
+}> = ({ name, label, focused }) => {
+  const { theme, isDark } = useAppTheme();
   return (
-    <View style={{ 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: focused ? theme.colors.primaryFaint : 'transparent',
-    }}>
-      <Ionicons 
-        name={name} 
-        size={22} 
-        color={focused ? theme.colors.primary : theme.colors.textTertiary} 
-      />
+    <View style={tabItemStyles.container}>
+      <View
+        style={[
+          tabItemStyles.iconBox,
+          focused && {
+            backgroundColor: isDark ? 'rgba(124, 92, 252, 0.24)' : 'rgba(107, 75, 224, 0.15)',
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(124, 92, 252, 0.45)' : 'rgba(107, 75, 224, 0.3)',
+          },
+        ]}
+      >
+        <Ionicons
+          name={name}
+          size={18}
+          color={focused ? theme.colors.primaryLight : theme.colors.textSecondary}
+        />
+      </View>
+      <Typography
+        variant="footnote"
+        weight={focused ? '700' : '500'}
+        color={focused ? theme.colors.white : theme.colors.textSecondary}
+        style={tabItemStyles.label}
+        numberOfLines={1}
+      >
+        {label}
+      </Typography>
     </View>
   );
 };
+
+const tabItemStyles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 2,
+    minWidth: 58,
+  },
+  iconBox: {
+    width: 38,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  label: {
+    fontSize: 10,
+    letterSpacing: 0.2,
+  },
+});
 
 import { useAccessibility } from './src/funciones/accesibilidad/useAccessibility';
 
@@ -102,22 +137,26 @@ const MainTabs = () => {
         tabBarShowLabel: false,
         tabBarStyle: {
           position: 'absolute',
-          bottom: Platform.OS === 'ios' ? 32 : 16,
+          bottom: Platform.OS === 'ios' ? 28 : 16,
           left: 16,
           right: 16,
-          borderRadius: 32,
-          height: 64,
-          backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)',
+          borderRadius: 34,
+          height: 66,
+          backgroundColor: isDark ? '#0C0C10' : '#FFFFFF',
           borderTopWidth: 0,
-          elevation: 0,
+          elevation: 10,
           overflow: 'hidden',
           borderWidth: 1,
-          borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+          borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.35,
+          shadowRadius: 14,
         },
         tabBarBackground: () => (
           <BlurView
             tint={isDark ? 'dark' : 'light'}
-            intensity={80}
+            intensity={90}
             style={StyleSheet.absoluteFill}
           />
         ),
@@ -133,8 +172,12 @@ const MainTabs = () => {
         component={EventsScreen}
         options={{
           headerShown: false,
-          tabBarIcon: ({ size, focused }) => (
-            <TabIcon name={focused ? 'compass' : 'compass-outline'} color="ignored" size={size} focused={focused} />
+          tabBarIcon: ({ focused }) => (
+            <TabItem
+              name={focused ? 'compass' : 'compass-outline'}
+              label="Eventos"
+              focused={focused}
+            />
           ),
         }}
       />
@@ -147,8 +190,12 @@ const MainTabs = () => {
           headerTintColor: theme.colors.text,
           headerTitleStyle: { fontWeight: '700' },
           headerShadowVisible: false,
-          tabBarIcon: ({ size, focused }) => (
-            <TabIcon name={focused ? 'cart' : 'cart-outline'} color="ignored" size={size} focused={focused} />
+          tabBarIcon: ({ focused }) => (
+            <TabItem
+              name={focused ? 'cart' : 'cart-outline'}
+              label="Carrito"
+              focused={focused}
+            />
           ),
         }}
       />
@@ -157,8 +204,12 @@ const MainTabs = () => {
         component={MyTicketsScreen}
         options={{
           headerShown: false,
-          tabBarIcon: ({ size, focused }) => (
-            <TabIcon name={focused ? 'ticket' : 'ticket-outline'} color="ignored" size={size} focused={focused} />
+          tabBarIcon: ({ focused }) => (
+            <TabItem
+              name={focused ? 'ticket' : 'ticket-outline'}
+              label="Boletos"
+              focused={focused}
+            />
           ),
         }}
       />
@@ -167,8 +218,12 @@ const MainTabs = () => {
         component={ProfileScreen as any}
         options={{
           headerShown: false,
-          tabBarIcon: ({ size, focused }) => (
-            <TabIcon name={focused ? 'person' : 'person-outline'} color="ignored" size={size} focused={focused} />
+          tabBarIcon: ({ focused }) => (
+            <TabItem
+              name={focused ? 'person' : 'person-outline'}
+              label="Perfil"
+              focused={focused}
+            />
           ),
         }}
       />

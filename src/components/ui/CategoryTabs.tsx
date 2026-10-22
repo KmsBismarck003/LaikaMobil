@@ -1,12 +1,11 @@
 /**
  * Componente CategoryTabs — LaikaMobil
- * Barra horizontal de filtros por categoría.
- * Pill-style con indicador de selección destacado.
+ * Barra horizontal de filtros por categoría tipo pills/chips.
+ * Diseño optimizado con micro-interacciones y alto contraste.
  */
 
 import React from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 import { Typography } from './Typography';
 import { useAppTheme } from '../../styles/ThemeProvider';
 import { useStyles } from '../../styles/useStyles';
@@ -21,15 +20,18 @@ interface CategoryTabsProps {
   categories: CategoryTabItem[];
   selectedId: string;
   onSelect: (id: string) => void;
+  rightAction?: React.ReactNode;
 }
 
 export const CategoryTabs: React.FC<CategoryTabsProps> = ({
   categories,
   selectedId,
   onSelect,
+  rightAction,
 }) => {
   const styles = useStyles(createStyles);
-  const { theme } = useAppTheme();
+  const { theme, isDark } = useAppTheme();
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -42,14 +44,21 @@ export const CategoryTabs: React.FC<CategoryTabsProps> = ({
           return (
             <TouchableOpacity
               key={cat.id}
-              style={[styles.tab, isSelected && styles.activeTab]}
+              style={[
+                styles.tab,
+                isSelected ? styles.activeTab : styles.inactiveTab,
+              ]}
               onPress={() => onSelect(cat.id)}
-              activeOpacity={0.7}
+              activeOpacity={0.75}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isSelected }}
+              accessibilityLabel={`Filtrar por categoría ${cat.label}`}
             >
               <Typography
                 variant="footnote"
-                weight={isSelected ? '600' : '500'}
-                color={isSelected ? theme.colors.background : theme.colors.textSecondary}
+                weight={isSelected ? '700' : '500'}
+                color={isSelected ? theme.colors.white : theme.colors.textSecondary}
+                style={styles.tabText}
               >
                 {cat.label}
               </Typography>
@@ -57,28 +66,53 @@ export const CategoryTabs: React.FC<CategoryTabsProps> = ({
           );
         })}
       </ScrollView>
+
+      {/* Acción o widget flotante a la derecha si existe */}
+      {rightAction && <View style={styles.rightActionContainer}>{rightAction}</View>}
     </View>
   );
 };
 
-const createStyles = (theme: any) => StyleSheet.create({
-  container: {
-    paddingVertical: theme.spacing.m,
-  },
-  scrollContent: {
-    paddingHorizontal: theme.spacing.m,
-    gap: theme.spacing.s,
-  },
-  tab: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: theme.borderRadius.full,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: theme.colors.borderMedium, // faint border for unselected
-  },
-  activeTab: {
-    backgroundColor: theme.colors.text,
-    borderColor: theme.colors.text,
-  },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      paddingVertical: 10,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    scrollContent: {
+      paddingHorizontal: theme.spacing.m,
+      gap: 8,
+      alignItems: 'center',
+    },
+    tab: {
+      paddingVertical: 8,
+      paddingHorizontal: 18,
+      borderRadius: theme.borderRadius.full,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    activeTab: {
+      backgroundColor: '#1E1E24',
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.28)',
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    inactiveTab: {
+      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.12)',
+    },
+    tabText: {
+      letterSpacing: 0.3,
+      fontSize: 12,
+    },
+    rightActionContainer: {
+      paddingRight: theme.spacing.m,
+      marginLeft: 'auto',
+    },
+  });
