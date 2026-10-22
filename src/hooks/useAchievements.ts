@@ -2,6 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { AchievementsService } from '../services/AchievementsService';
 
+// Caché en memoria: evita repetir el skeleton al volver a la pantalla.
+let cachedCoupons: any[] = [];
+let cachedPoints = 0;
+let achievementsLoaded = false;
+
 export const TIER_DATA = [
   { tier: 1, label: 'Pasaporte Cósmico', icon: 'map', color: '#3b82f6', pts: 0, phase: 'GANCHO', reward: 'Sin cargos de servicio' },
   { tier: 2, label: 'Ignición: T-Minus 0', icon: 'zap', color: '#22c55e', pts: 100, phase: 'GANCHO', reward: '15% de Descuento' },
@@ -29,16 +34,20 @@ export const getNextTier = (pts: number) => {
 
 export const useAchievements = () => {
   const user = useAuth();
-  
-  const [coupons, setCoupons] = useState<any[]>([]);
-  const [totalPoints, setTotalPoints] = useState(0);
-  const [loading, setLoading] = useState(true);
+
+  // Caché en memoria: evita repetir el skeleton al volver a la pantalla.
+  const [coupons, setCoupons] = useState<any[]>(cachedCoupons);
+  const [totalPoints, setTotalPoints] = useState(cachedPoints);
+  const [loading, setLoading] = useState(!achievementsLoaded);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAchievements = useCallback(async () => {
     if (!user) return;
     try {
-      setLoading(true);
+      // Solo loader la primera vez; después se conservan los datos.
+      if (!achievementsLoaded) {
+        setLoading(true);
+      }
       setError(null);
 
       const [achievementsData, couponsData] = await Promise.allSettled([
@@ -48,7 +57,9 @@ export const useAchievements = () => {
 
       if (achievementsData.status === 'fulfilled') {
         const data = achievementsData.value;
-        setTotalPoints(data?.total_points || 0);
+        const pts = data?.total_points || 0;
+        cachedPoints = pts;
+        setTotalPoints(pts);
       } else {
         setError('No se pudieron cargar los logros');
       }
@@ -57,8 +68,10 @@ export const useAchievements = () => {
         const couponList = Array.isArray(couponsData.value)
           ? couponsData.value
           : couponsData.value?.coupons || [];
+        cachedCoupons = couponList;
         setCoupons(couponList);
       }
+      achievementsLoaded = true;
     } catch (err: any) {
       setError(err.message || 'Error al cargar logros');
     } finally {

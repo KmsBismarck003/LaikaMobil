@@ -25,6 +25,7 @@ import {
   Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
 import { EventService } from '../services/EventService';
 import { useAppTheme } from '../styles/ThemeProvider';
@@ -40,48 +41,81 @@ import { useAuth } from '../hooks/useAuth';
 import { useStyles } from '../styles/useStyles';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { OfflineStateView } from '../components/ui/OfflineStateView';
+import { SkeletonDetail } from '../components/ui/Skeleton';
+import { withSkeleton } from '../components/ui/withSkeleton';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EventDetail'>;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
-  const styles = useStyles(createStyles);
-  const { theme } = useAppTheme();
-  const { eventId } = route.params;
-  const [event, setEvent] = useState<any>(null);
-  const [busySeats, setBusySeats] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [selectedSection, setSelectedSection] = useState<any>(null);
-  const [selectedFunction, setSelectedFunction] = useState<any>(null);
-  const [quantity, setQuantity] = useState(1);
-  const user = useAuth();
-  const { isOffline } = useNetworkStatus();
+// Caché en memoria por evento: volver al mismo evento no repite el skeleton.
+const detailCache: Record<string, { event: any; busySeats: string[] }> = {};
 
-  const fetchDetail = async () => {
-      try {
+// Estado de datos para el HOC withSkeleton (fetch + caché + hasData).
+const useEventDetailScreenState = () => {
+  const route = useRoute<any>();
+  const { eventId } = route.params;
+  const cached = detailCache[eventId];
+  const [event, setEvent] = useState<any>(cached?.event ?? null);
+  const [busySeats, setBusySeats] = useState<string[]>(cached?.busySeats ?? []);
+  const [loading, setLoading] = useState(!cached);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDetail = async (isRetry = false) => {
+    try {
+      // Con caché se muestran los datos y se refresca en silencio.
+      if (!detailCache[eventId] || isRetry) {
         setLoading(true);
-        const [data, busy] = await Promise.all([
-          EventService.getEventById(eventId),
-          EventService.getBusySeats(eventId),
-        ]);
-        setEvent(data);
-        setBusySeats(busy);
-        if (data?.functions && data.functions.length > 0) {
-          setSelectedFunction(data.functions[0]);
-        }
-      } catch (err: any) {
-        setError(err.message || 'Error al cargar el evento');
-      } finally {
-        setLoading(false);
       }
-    };
+      setError(null);
+      const [data, busy] = await Promise.all([
+        EventService.getEventById(eventId),
+        EventService.getBusySeats(eventId),
+      ]);
+      detailCache[eventId] = { event: data, busySeats: busy };
+      setEvent(data);
+      setBusySeats(busy);
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar el evento');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchDetail();
   }, [eventId]);
+
+  return {
+    eventId,
+    event,
+    busySeats,
+    loading,
+    error,
+    hasData: !!event,
+    refetch: () => fetchDetail(true),
+  };
+};
+
+const EventDetailContent: React.FC<any> = (props) => {
+  const { route, navigation, eventId, event, busySeats, error, refetch } = props;
+  const styles = useStyles(createStyles);
+  const { theme } = useAppTheme();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [selectedSection, setSelectedSection] = useState<any>(null);
+  const [selectedFunction, setSelectedFunction] = useState<any>(
+    event?.functions?.[0] ?? null
+  );
+  const [quantity, setQuantity] = useState(1);
+  const user = useAuth();
+  const { isOffline } = useNetworkStatus();
+
+  // Sincroniza la función inicial cuando llegan los datos (caché o red).
+  useEffect(() => {
+    if (!selectedFunction && event?.functions?.length > 0) {
+      setSelectedFunction(event.functions[0]);
+    }
+  }, [event]);
 
   const openMap = () => {
     const query = encodeURIComponent(event.location);
@@ -95,6 +129,16 @@ export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         }
       })
       .catch((err) => console.error('Error al abrir mapa:', err));
+  };
+
+  // Evita "'GO_BACK' not handled" cuando EventDetail no tiene pantalla previa
+  // (deep link o reinicio de la app).
+  const safeGoBack = () => {
+    if (navigation.canGoBack?.()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate('MainTabs' as never);
+    }
   };
 
   const handleBuyPress = () => {
@@ -147,21 +191,14 @@ export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     return (
       <View style={styles.mainContainer}>
         <OfflineStateView 
-          onRetry={fetchDetail} 
-          onBack={() => navigation.goBack()} 
+          onRetry={refetch} 
+          onBack={safeGoBack} 
         />
       </View>
     );
   }
 
-  // 2. Cargando
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
+  // 2. Cargando: lo decide el HOC withSkeleton (ver abajo).
 
   // 3. Errores
   if (error || !event) {
@@ -172,8 +209,8 @@ export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       return (
         <View style={styles.mainContainer}>
           <OfflineStateView 
-            onRetry={fetchDetail} 
-            onBack={() => navigation.goBack()} 
+            onRetry={refetch} 
+            onBack={safeGoBack} 
           />
         </View>
       );
@@ -188,7 +225,7 @@ export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         <Typography variant="body" align="center">
           {error}
         </Typography>
-        <Button title="Volver" onPress={() => navigation.goBack()} style={{ marginTop: 24 }} />
+        <Button title="Volver" onPress={safeGoBack} style={{ marginTop: 24 }} />
       </View>
     );
   }
@@ -221,7 +258,7 @@ export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           eventTime={event.event_time}
           location={event.location}
           category={event.category}
-          onBack={() => navigation.goBack()}
+          onBack={safeGoBack}
           onMapPress={openMap}
         />
 
@@ -388,6 +425,12 @@ export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     </View>
   );
 };
+
+export const EventDetailScreen = withSkeleton(
+  EventDetailContent,
+  SkeletonDetail,
+  useEventDetailScreenState
+);
 
 const createStyles = (theme: any) => StyleSheet.create({
   mainContainer: {

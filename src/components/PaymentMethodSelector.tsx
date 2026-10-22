@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAppTheme } from '../styles/ThemeProvider';
 import { PaymentMethod } from '../services/PaymentService';
 import { useStyles } from '../styles/useStyles';
+import { SkeletonRow } from './ui/Skeleton';
 
 interface PaymentMethodSelectorProps {
   methods: PaymentMethod[];
@@ -24,9 +25,9 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       <Text style={styles.title}>Método de Pago</Text>
 
       {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Cargando métodos guardados...</Text>
+        <View>
+          <SkeletonRow />
+          <SkeletonRow />
         </View>
       ) : (
         <>

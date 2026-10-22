@@ -26,16 +26,20 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useEvents } from '../hooks/useEvents';
+import { useAuth } from '../hooks/useAuth';
 import { EventCard } from '../components/EventCard';
 import { useAppTheme } from '../styles/ThemeProvider';
 import { HeroCarousel } from '../components/ui/HeroCarousel';
-import { GlassSearchBar } from '../components/ui/GlassSearchBar';
+import { HeaderBrandRow, FloatingSearchBar } from '../components/ui/MobileWebHeader';
+import { SkeletonHero, SkeletonEventCard } from '../components/ui/Skeleton';
+import { withSkeleton } from '../components/ui/withSkeleton';
 import { CategoryTabs } from '../components/ui/CategoryTabs';
 import { Typography } from '../components/ui/Typography';
 import { Button } from '../components/ui/Button';
 import { useStyles } from '../styles/useStyles';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { OfflineStateView } from '../components/ui/OfflineStateView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CATEGORIES = [
   { id: '',         label: 'Destacados' },
@@ -47,7 +51,14 @@ const CATEGORIES = [
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'EventDetail'>;
 
-export const EventsScreen: React.FC = () => {
+// Estado para el HOC withSkeleton: datos + bandera hasData (con caché).
+const useEventsScreenState = () => {
+  const data = useEvents();
+  const user = useAuth() as any;
+  return { ...data, user, hasData: data.events.length > 0 };
+};
+
+const EventsContent: React.FC<any> = (props) => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
   const styles = useStyles(createStyles);
@@ -61,10 +72,16 @@ export const EventsScreen: React.FC = () => {
     setDate,
     location,
     setLocation,
+    query,
+    setQuery,
     availableLocations,
     refetch,
-  } = useEvents();
+    user,
+  } = props;
   const { isOffline } = useNetworkStatus();
+  const insets = useSafeAreaInsets();
+  const [brandH, setBrandH] = React.useState(170);
+  const [searchH, setSearchH] = React.useState(56);
 
   const [isSearchVisible, setIsSearchVisible] = React.useState(false);
   const [tempLocation, setTempLocation] = React.useState(location);
@@ -91,15 +108,7 @@ export const EventsScreen: React.FC = () => {
     return <OfflineStateView onRetry={refetch} />;
   }
 
-  // 2. Estado de carga inicial
-  if (loading && events.length === 0) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
-
+  // 2. Estado de carga inicial: lo decide el HOC withSkeleton (ver abajo).
   // 3. Error (Network Error por Backend Caído)
   const isServerDown = error?.toLowerCase().includes('network error') || error?.toLowerCase().includes('conectar');
   if (isServerDown && events.length === 0) {
@@ -121,6 +130,12 @@ export const EventsScreen: React.FC = () => {
     );
   }
 
+  const openFilters = () => {
+    setTempLocation(location);
+    setTempDate(date);
+    setIsSearchVisible(true);
+  };
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -128,20 +143,13 @@ export const EventsScreen: React.FC = () => {
         keyExtractor={(item) => item.id.toString()}
         ListHeaderComponent={
           <>
-            <View style={{ position: 'relative' }}>
-              <HeroCarousel
-                events={events.slice(0, 5)}
-                onPressEvent={(event) =>
-                  handleEventPress(event.id, event.title)
-                }
-                onPressExplore={() => console.log('Explore All')}
-              />
-              <GlassSearchBar
-                date={date}
-                location={location}
-                onSearchPress={() => setIsSearchVisible(true)}
-              />
-            </View>
+            <HeroCarousel
+              events={events.slice(0, 5)}
+              onPressEvent={(event) =>
+                handleEventPress(event.id, event.title)
+              }
+              onPressExplore={() => console.log('Explore All')}
+            />
 
             <CategoryTabs
               categories={CATEGORIES}
@@ -174,7 +182,7 @@ export const EventsScreen: React.FC = () => {
             onPress={() => handleEventPress(item.id, item.title)}
           />
         )}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingTop: brandH - 10 + searchH }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -196,6 +204,30 @@ export const EventsScreen: React.FC = () => {
           </View>
         }
       />
+
+      {/* Cuadro negro fijo: el contenido pasa por debajo al hacer scroll */}
+      <View style={styles.fixedBrand}>
+        <HeaderBrandRow
+          onUserPress={() => (navigation as any).navigate('Perfil')}
+          userName={user?.firstName || user?.email?.split('@')[0]}
+          onLayout={setBrandH}
+        />
+      </View>
+
+      {/* Buscador fijo debajo del cuadro negro */}
+      <View
+        style={[styles.floatingSearch, { top: brandH - 10 }]}
+        onLayout={(e) => setSearchH(e.nativeEvent.layout.height)}
+      >
+        <FloatingSearchBar
+          query={query}
+          onQueryChange={setQuery}
+          locationLabel={location || 'Todo México'}
+          onLocationPress={openFilters}
+          dateLabel={date || 'Todas las fechas'}
+          onDatePress={openFilters}
+        />
+      </View>
 
       {/* Modal simple de búsqueda */}
       <Modal
@@ -230,7 +262,7 @@ export const EventsScreen: React.FC = () => {
                   {!tempLocation && <Feather name="check" size={16} color={theme.colors.primary} />}
                 </TouchableOpacity>
 
-                {availableLocations.map((loc) => (
+                {availableLocations.map((loc: string) => (
                   <TouchableOpacity
                     key={loc}
                     style={[styles.dropdownRow, tempLocation === loc && styles.dropdownRowActive]}
@@ -308,10 +340,69 @@ export const EventsScreen: React.FC = () => {
   );
 };
 
+// ── Skeleton de Eventos para el HOC (hero + tarjetas; los filtros del
+// buscador reintentan la carga mientras no hay datos) ─────────────────────
+const EventsSkeletonView: React.FC<any> = (props) => {
+  const { query, setQuery, location, date, refetch, user } = props;
+  const navigation = useNavigation<any>();
+  const styles = useStyles(createStyles);
+  const [brandH, setBrandH] = React.useState(170);
+  const [searchH, setSearchH] = React.useState(56);
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={[styles.listContent, { paddingTop: brandH + searchH + 2 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <SkeletonHero />
+        <View style={{ height: 12 }} />
+        <SkeletonEventCard />
+        <SkeletonEventCard />
+        <SkeletonEventCard />
+      </ScrollView>
+      <View style={styles.fixedBrand}>
+        <HeaderBrandRow
+          onUserPress={() => navigation.navigate('Perfil')}
+          userName={user?.firstName || user?.email?.split('@')[0]}
+          onLayout={setBrandH}
+        />
+      </View>
+      <View
+        style={[styles.floatingSearch, { top: brandH - 10 }]}
+        onLayout={(e) => setSearchH(e.nativeEvent.layout.height)}
+      >
+        <FloatingSearchBar
+          query={query}
+          onQueryChange={setQuery}
+          locationLabel={location || 'Todo México'}
+          onLocationPress={refetch}
+          dateLabel={date || 'Todas las fechas'}
+          onDatePress={refetch}
+        />
+      </View>
+    </View>
+  );
+};
+
+export const EventsScreen = withSkeleton(EventsContent, EventsSkeletonView, useEventsScreenState);
+
 const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  floatingSearch: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    zIndex: 12,
+  },
+  fixedBrand: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 11,
   },
   centerContainer: {
     flex: 1,
@@ -328,7 +419,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: theme.spacing.m,
-    paddingBottom: 100, // Extra padding for the floating tab bar
+    paddingBottom: 110, // Espacio para la tab bar flotante
   },
   listHeader: {
     flexDirection: 'row',

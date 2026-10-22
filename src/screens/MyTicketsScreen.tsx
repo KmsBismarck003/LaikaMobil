@@ -26,6 +26,8 @@ import { getCurrentUser } from '../store/AuthStore';
 import { TicketActionModal } from '../components/TicketActionModal';
 import { TicketCard } from '../components/ui/TicketCard';
 import { Typography } from '../components/ui/Typography';
+import { SkeletonRow } from '../components/ui/Skeleton';
+import { withSkeleton } from '../components/ui/withSkeleton';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
@@ -33,23 +35,21 @@ import { useStyles } from '../styles/useStyles';
 
 type TabKey = 'active' | 'in_progress' | 'history';
 
+// Caché en memoria por usuario: evita repetir el skeleton al volver.
+const ticketsCache: Record<string, Ticket[]> = {};
+
 const TAB_CONFIG: { key: TabKey; label: string; icon: string }[] = [
   { key: 'active',      label: 'Activos',   icon: 'check-circle' },
   { key: 'in_progress', label: 'En Vivo',   icon: 'radio' },
   { key: 'history',     label: 'Historial', icon: 'archive' },
 ];
 
-export const MyTicketsScreen = () => {
-  const styles = useStyles(createStyles);
-  const { theme } = useAppTheme();
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabKey>('active');
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+// Estado de datos para el HOC withSkeleton (fetch + caché + hasData).
+const useMyTicketsScreenState = () => {
   const user = getCurrentUser();
-  const insets = useSafeAreaInsets();
+  const userKey = user?.id?.toString() ?? 'anon';
+  const [tickets, setTickets] = useState<Ticket[]>(ticketsCache[userKey] ?? []);
+  const [loading, setLoading] = useState(!(userKey in ticketsCache));
 
   useEffect(() => {
     if (!user) {
@@ -59,7 +59,12 @@ export const MyTicketsScreen = () => {
 
     const fetchTickets = async () => {
       try {
+        // Si hay caché, se muestran los datos y se refresca en silencio.
+        if (!(userKey in ticketsCache)) {
+          setLoading(true);
+        }
         const myTickets = await TicketService.getMyTickets(user.id);
+        ticketsCache[userKey] = myTickets;
         setTickets(myTickets);
       } catch (error) {
         console.error(error);
@@ -71,21 +76,25 @@ export const MyTicketsScreen = () => {
     fetchTickets();
   }, []);
 
-  const displayedTickets = tickets.filter((t) => t.status === activeTab);
+  return { tickets, loading, hasData: tickets.length > 0, user };
+};
+
+const MyTicketsContent: React.FC<any> = (props) => {
+  const { tickets, user } = props;
+  const styles = useStyles(createStyles);
+  const { theme } = useAppTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const insets = useSafeAreaInsets();
+  const [activeTab, setActiveTab] = useState<TabKey>('active');
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+
+  const displayedTickets = tickets.filter((t: Ticket) => t.status === activeTab);
 
   const handleNavigateToPass = (ticket: Ticket) => {
     navigation.navigate('TicketPass', { ticket });
   };
 
-  // ── Loading ──────────────────────────────────────────────────────────────
-
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator color={theme.colors.primary} size="large" />
-      </View>
-    );
-  }
+  // ── Loading: lo decide el HOC withSkeleton (ver abajo).
 
   // ── Sin sesión ───────────────────────────────────────────────────────────
 
@@ -129,7 +138,7 @@ export const MyTicketsScreen = () => {
       <View style={styles.tabBar}>
         {TAB_CONFIG.map(({ key, label, icon }) => {
           const isActive = activeTab === key;
-          const count = tickets.filter((t) => t.status === key).length;
+          const count = tickets.filter((t: Ticket) => t.status === key).length;
 
           return (
             <TouchableOpacity
@@ -181,7 +190,7 @@ export const MyTicketsScreen = () => {
             </Typography>
           </View>
         ) : (
-          displayedTickets.map((ticket) => (
+          displayedTickets.map((ticket: Ticket) => (
             <TicketCard
               key={ticket.id}
               ticket={ticket}
@@ -209,6 +218,24 @@ export const MyTicketsScreen = () => {
     </View>
   );
 };
+
+// ── Skeleton de Boletos para el HOC ──────────────────────────────────────
+const MyTicketsSkeletonView: React.FC<any> = () => {
+  return (
+    <View style={{ flex: 1, padding: 16 }}>
+      <SkeletonRow />
+      <SkeletonRow />
+      <SkeletonRow />
+      <SkeletonRow />
+    </View>
+  );
+};
+
+export const MyTicketsScreen = withSkeleton(
+  MyTicketsContent,
+  MyTicketsSkeletonView,
+  useMyTicketsScreenState
+);
 
 const createStyles = (theme: any) => StyleSheet.create({
   container: {

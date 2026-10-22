@@ -1,10 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, Platform, StyleSheet } from 'react-native';
+import { View, Platform, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { EventsScreen } from './src/screens/EventsScreen';
@@ -48,6 +49,7 @@ export type RootStackParamList = {
   MainTabs: undefined;
   EventDetail: { eventId: string; eventTitle: string };
   Login: { eventPreview?: EventPreviewData };
+  Register: { eventPreview?: EventPreviewData };
   Cart: { user?: any; eventPreview?: EventPreviewData };
   Success: { userName: string; eventTitle: string; eventDate: string; quantity: number };
   Profile: undefined;
@@ -64,6 +66,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const TabIcon: React.FC<{ name: any; color: string; size: number; focused: boolean }> = ({
   name,
+  color,
   size,
   focused,
 }) => {
@@ -72,57 +75,131 @@ const TabIcon: React.FC<{ name: any; color: string; size: number; focused: boole
     <View style={{ 
       alignItems: 'center', 
       justifyContent: 'center',
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 46,
+      height: 32,
+      borderRadius: 16,
       backgroundColor: focused ? theme.colors.primaryFaint : 'transparent',
     }}>
       <Ionicons 
         name={name} 
-        size={22} 
-        color={focused ? theme.colors.primary : theme.colors.textTertiary} 
+        size={23} 
+        color={color} 
       />
     </View>
   );
 };
 
 import { useAccessibility } from './src/funciones/accesibilidad/useAccessibility';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from './src/hooks/useAuth';
+import { Text } from 'react-native';
+
+const TAB_ICONS: Record<string, { active: any; inactive: any }> = {
+  Eventos: { active: 'compass', inactive: 'compass-outline' },
+  Carrito: { active: 'cart', inactive: 'cart-outline' },
+  MisBoletos: { active: 'ticket', inactive: 'ticket-outline' },
+  Perfil: { active: 'person', inactive: 'person-outline' },
+};
+
+const TAB_LABELS: Record<string, string> = {
+  Eventos: 'Eventos',
+  Carrito: 'Carrito',
+  MisBoletos: 'Boletos',
+  Perfil: 'Perfil',
+};
+
+/**
+ * Tab bar custom: base negra de borde a borde hasta el filo de la pantalla
+ * (tapa la franja del sistema) + pastilla interior flotante.
+ * Sin BlurView para evitar la doble capa.
+ */
+const CustomTabBar: React.FC<any> = ({ state, navigation }) => {
+  const { theme, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const user = useAuth();
+  const activeRoute = state.routes[state.index]?.name;
+
+  // Sin sesión, la tab Perfil muestra el login incrustado a pantalla
+  // completa: se oculta el navigator para no mostrarlo en la vista login.
+  if (activeRoute === 'Perfil' && !user) {
+    return null;
+  }
+
+  const activeColor = isDark ? theme.colors.primary : '#FFFFFF';
+  const inactiveColor = isDark ? theme.colors.textSecondary : 'rgba(255,255,255,0.55)';
+
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left: 4,
+        right: 4,
+        bottom: Math.max(insets.bottom, 10),
+      }}
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          backgroundColor: '#0D0D0F',
+          borderRadius: 22,
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.12)',
+          paddingVertical: 3,
+          paddingHorizontal: 8,
+        }}
+      >
+        {state.routes.map((route: any, index: number) => {
+          const focused = state.index === index;
+          const color = focused ? activeColor : inactiveColor;
+          const icons = TAB_ICONS[route.name] ?? TAB_ICONS.Eventos;
+          return (
+            <TouchableOpacity
+              key={route.key}
+              accessibilityRole="button"
+              onPress={() => {
+                const event = navigation.emit({
+                  type: 'tabPress',
+                  target: route.key,
+                  canPreventDefault: true,
+                });
+                if (!focused && !event.defaultPrevented) {
+                  navigation.navigate(route.name);
+                }
+              }}
+              style={{ flex: 1, alignItems: 'center', paddingVertical: 2 }}
+            >
+              <View
+                style={{
+                  width: 52,
+                  height: 34,
+                  borderRadius: 17,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: focused ? theme.colors.primary : 'transparent',
+                }}
+              >
+                <Ionicons name={focused ? icons.active : icons.inactive} size={21} color={focused ? '#FFFFFF' : color} />
+              </View>
+              <Text style={{ color, fontSize: 9, fontWeight: '600', marginTop: 1 }}>
+                {TAB_LABELS[route.name] ?? route.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+};
 
 const MainTabs = () => {
   const { theme, isDark } = useAppTheme();
   const { reduceMotion } = useAccessibility();
   return (
     <Tab.Navigator
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
         animation: reduceMotion ? 'none' : 'shift',
-        tabBarShowLabel: false,
-        tabBarStyle: {
-          position: 'absolute',
-          bottom: Platform.OS === 'ios' ? 32 : 16,
-          left: 16,
-          right: 16,
-          borderRadius: 32,
-          height: 64,
-          backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)',
-          borderTopWidth: 0,
-          elevation: 0,
-          overflow: 'hidden',
-          borderWidth: 1,
-          borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-        },
-        tabBarBackground: () => (
-          <BlurView
-            tint={isDark ? 'dark' : 'light'}
-            intensity={80}
-            style={StyleSheet.absoluteFill}
-          />
-        ),
-        tabBarItemStyle: {
-          paddingVertical: 0,
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
       }}
     >
       <Tab.Screen
@@ -130,8 +207,8 @@ const MainTabs = () => {
         component={EventsScreen}
         options={{
           headerShown: false,
-          tabBarIcon: ({ size, focused }) => (
-            <TabIcon name={focused ? 'compass' : 'compass-outline'} color="ignored" size={size} focused={focused} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name={focused ? 'compass' : 'compass-outline'} color={color} size={size} focused={focused} />
           ),
         }}
       />
@@ -144,8 +221,8 @@ const MainTabs = () => {
           headerTintColor: theme.colors.text,
           headerTitleStyle: { fontWeight: '700' },
           headerShadowVisible: false,
-          tabBarIcon: ({ size, focused }) => (
-            <TabIcon name={focused ? 'cart' : 'cart-outline'} color="ignored" size={size} focused={focused} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name={focused ? 'cart' : 'cart-outline'} color={color} size={size} focused={focused} />
           ),
         }}
       />
@@ -154,8 +231,9 @@ const MainTabs = () => {
         component={MyTicketsScreen}
         options={{
           headerShown: false,
-          tabBarIcon: ({ size, focused }) => (
-            <TabIcon name={focused ? 'ticket' : 'ticket-outline'} color="ignored" size={size} focused={focused} />
+          tabBarLabel: 'Boletos',
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name={focused ? 'ticket' : 'ticket-outline'} color={color} size={size} focused={focused} />
           ),
         }}
       />
@@ -164,8 +242,8 @@ const MainTabs = () => {
         component={ProfileScreen as any}
         options={{
           headerShown: false,
-          tabBarIcon: ({ size, focused }) => (
-            <TabIcon name={focused ? 'person' : 'person-outline'} color="ignored" size={size} focused={focused} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name={focused ? 'person' : 'person-outline'} color={color} size={size} focused={focused} />
           ),
         }}
       />
@@ -182,10 +260,25 @@ const RootNavigator = () => {
   // Inicializamos el interceptor de notificaciones para atrapar los "taps" 
   // e inyectarle el enrutador de React Navigation
   useNotifications(navigationRef);
-  
+
+  // Fondo de la ventana raíz en negro para que la zona del gesto del
+  // sistema se funda con la tab bar negra (efecto edge-to-edge estilo Instagram).
+  useEffect(() => {
+    try {
+      const ui = SystemUI as any;
+      if (typeof ui?.setBackgroundColorAsync === 'function') {
+        ui.setBackgroundColorAsync('#0D0D0F').catch(() => {});
+        console.log('[SYSUI] root background set to black');
+      } else {
+        console.log('[SYSUI] setBackgroundColorAsync NOT available');
+      }
+    } catch {}
+  }, []);
+
+    
   return (
     <>
-      <StatusBar style={isDark ? "light" : "dark"} />
+      <StatusBar style="light" />
       <NavigationContainer
         ref={navigationRef}
         theme={{
@@ -215,7 +308,7 @@ const RootNavigator = () => {
             contentStyle: {
               backgroundColor: theme.colors.background,
             },
-            animation: 'fade_from_bottom',
+            animation: 'fade',
           }}
         >
           <Stack.Screen
@@ -228,17 +321,16 @@ const RootNavigator = () => {
             component={EventDetailScreen}
             options={{
               headerShown: false,
-              animation: 'slide_from_right',
+              animation: 'fade',
             }}
           />
           <Stack.Screen
             name="Login"
             component={LoginScreen}
             options={{
-              title: 'Iniciar Sesión',
-              headerBackTitle: 'Atrás',
+              headerShown: false,
               presentation: 'modal',
-              animation: 'slide_from_bottom',
+              animation: 'fade',
             }}
           />
           <Stack.Screen
@@ -247,7 +339,7 @@ const RootNavigator = () => {
             options={{
               title: 'Carrito de Compras',
               headerBackTitle: 'Eventos',
-              animation: 'slide_from_right',
+              animation: 'fade',
             }}
           />
           <Stack.Screen
@@ -273,7 +365,7 @@ const RootNavigator = () => {
             options={{
               headerShown: false,
               presentation: 'modal',
-              animation: 'slide_from_bottom',
+              animation: 'fade',
             }}
           />
           <Stack.Screen
@@ -282,7 +374,7 @@ const RootNavigator = () => {
             options={{
               title: 'Información Personal',
               headerBackTitle: 'Perfil',
-              animation: 'slide_from_right',
+              animation: 'fade',
             }}
           />
           <Stack.Screen
@@ -291,7 +383,7 @@ const RootNavigator = () => {
             options={{
               title: 'Ajustes',
               headerBackTitle: 'Perfil',
-              animation: 'slide_from_right',
+              animation: 'fade',
             }}
           />
           <Stack.Screen
@@ -300,7 +392,7 @@ const RootNavigator = () => {
             options={{
               title: 'Accesibilidad',
               headerBackTitle: 'Perfil',
-              animation: 'slide_from_right',
+              animation: 'fade',
             }}
           />
           <Stack.Screen
@@ -309,7 +401,7 @@ const RootNavigator = () => {
             options={{
               title: 'Mis Logros',
               headerBackTitle: 'Perfil',
-              animation: 'slide_from_right',
+              animation: 'fade',
             }}
           />
           <Stack.Screen
@@ -318,7 +410,7 @@ const RootNavigator = () => {
             options={{
               title: 'Ayuda y soporte',
               headerBackTitle: 'Perfil',
-              animation: 'slide_from_right',
+              animation: 'fade',
             }}
           />
         </Stack.Navigator>

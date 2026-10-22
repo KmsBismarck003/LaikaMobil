@@ -5,7 +5,7 @@ import { lightTheme, darkTheme, Theme } from './theme';
 
 type ThemeType = 'light' | 'dark' | 'auto';
 
-const THEME_STORAGE_KEY = '@laika_theme_preference';
+const THEME_STORAGE_KEY = '@laika_theme_preference_v2';
 
 interface ThemeContextData {
   theme: Theme;
@@ -15,17 +15,18 @@ interface ThemeContextData {
 }
 
 const ThemeContext = createContext<ThemeContextData>({
-  theme: darkTheme,
-  themeType: 'auto',
+  theme: lightTheme,
+  themeType: 'light',
   setThemeType: () => {},
-  isDark: true,
+  isDark: false,
 });
 
 export const useAppTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const systemColorScheme = useColorScheme();
-  const [themeType, setThemeTypeState] = useState<ThemeType>('auto');
+  // Por defecto la app arranca en modo claro; el usuario puede cambiarlo en Ajustes.
+  const [themeType, setThemeTypeState] = useState<ThemeType>('light');
   
   useEffect(() => {
     const loadThemePref = async () => {

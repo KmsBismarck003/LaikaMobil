@@ -24,8 +24,30 @@ export const OfflineStateView: React.FC<OfflineStateViewProps> = ({
   showTicketsButton = true
 }) => {
   const { theme, isDark } = useAppTheme();
-  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+
+  // Este componente se usa tanto dentro de MainTabs (Eventos) como en el
+  // Stack raíz (EventDetail). Según dónde esté montado, 'MisBoletos' debe
+  // navegarse de forma distinta para evitar el error
+  // "The action 'NAVIGATE' with payload {name: 'MisBoletos'} was not handled".
+  const goToTickets = () => {
+    try {
+      const state = navigation.getState?.();
+      const inCurrentNavigator = Array.isArray(state?.routeNames) && state.routeNames.includes('MisBoletos');
+      if (inCurrentNavigator) {
+        navigation.navigate('MisBoletos');
+      } else {
+        navigation.navigate('MainTabs', { screen: 'MisBoletos' });
+      }
+    } catch {
+      try {
+        navigation.navigate('MainTabs', { screen: 'MisBoletos' });
+      } catch {
+        // Último recurso: nada que navegar
+      }
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -63,7 +85,7 @@ export const OfflineStateView: React.FC<OfflineStateViewProps> = ({
             title="Ver Mis Boletos"
             variant="primary"
             size="large"
-            onPress={() => navigation.navigate('MisBoletos')}
+            onPress={goToTickets}
             style={styles.mainButton}
           />
         )}

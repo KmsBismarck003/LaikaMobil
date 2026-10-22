@@ -4,23 +4,28 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useAppTheme } from '../styles/ThemeProvider';
 import { Typography } from '../components/ui/Typography';
+import { SkeletonBlock, SkeletonRow } from '../components/ui/Skeleton';
+import { withSkeleton } from '../components/ui/withSkeleton';
 import { useStyles } from '../styles/useStyles';
 import { useAchievements, TIER_DATA } from '../hooks/useAchievements';
 import * as Clipboard from 'expo-clipboard';
 
-export const AchievementsScreen: React.FC = () => {
+// Estado para el HOC withSkeleton.
+const useAchievementsScreenState = () => {
+  const data = useAchievements();
+  return {
+    ...data,
+    hasData: data.coupons.length > 0 || data.totalPoints > 0,
+  };
+};
+
+const AchievementsContent: React.FC<any> = (props) => {
+  const { coupons, totalPoints, tier, nextTier, error } = props;
   const styles = useStyles(createStyles);
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
-  const { coupons, totalPoints, tier, nextTier, loading, error } = useAchievements();
 
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
+  // 1. Cargando: lo decide el HOC withSkeleton (ver abajo).
 
   if (error) {
     return (
@@ -193,7 +198,7 @@ export const AchievementsScreen: React.FC = () => {
             ))}
 
             {/* Cupones de API */}
-            {coupons.map((c, i) => (
+            {coupons.map((c: any, i: number) => (
               <View key={`coupon-${i}`} style={styles.couponCard}>
                 <View style={[styles.couponMain, { borderBottomColor: theme.colors.borderFaint }]}>
                   <Typography variant="subheadline" color={theme.colors.text} style={{ marginBottom: 8 }}>
@@ -237,6 +242,25 @@ export const AchievementsScreen: React.FC = () => {
     </View>
   );
 };
+
+// ── Skeleton de Logros para el HOC ───────────────────────────────────────
+const AchievementsSkeletonView: React.FC<any> = () => {
+  return (
+    <View style={{ flex: 1, padding: 16 }}>
+      <SkeletonBlock width="60%" height={22} style={{ marginBottom: 16 }} />
+      <SkeletonRow />
+      <SkeletonRow />
+      <SkeletonRow />
+      <SkeletonBlock width="100%" height={52} borderRadius={26} style={{ marginTop: 8 }} />
+    </View>
+  );
+};
+
+export const AchievementsScreen = withSkeleton(
+  AchievementsContent,
+  AchievementsSkeletonView,
+  useAchievementsScreenState
+);
 
 const createStyles = (theme: any) => StyleSheet.create({
   container: {
