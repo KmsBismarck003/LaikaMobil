@@ -19,6 +19,7 @@ import { Typography } from './Typography';
 import { CategoryBadge } from './CategoryBadge';
 import { parseDateParts, formatTime } from '../../styles/designUtils';
 import { useStyles } from '../../styles/useStyles';
+import { getSafeImageSource } from '../../utils/imageUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HEADER_HEIGHT = SCREEN_WIDTH * 0.9;
@@ -51,7 +52,7 @@ export const EventDetailHeader: React.FC<EventDetailHeaderProps> = ({
   return (
     <View style={styles.container}>
       <ImageBackground
-        source={imageUrl ? { uri: imageUrl } : undefined}
+        source={getSafeImageSource(imageUrl)}
         style={styles.image}
         imageStyle={{ resizeMode: 'cover' }}
       >

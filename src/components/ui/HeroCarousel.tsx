@@ -29,6 +29,7 @@ import { useAppTheme } from '../../styles/ThemeProvider';
 import { Event } from '../../services/EventService';
 import { parseDateParts, getCategoryColor } from '../../styles/designUtils';
 import { useStyles } from '../../styles/useStyles';
+import { getSafeImageSource } from '../../utils/imageUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SLIDE_HEIGHT = 440;
@@ -102,7 +103,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({ event, index, total, onPress }) =
     >
       <View style={slideStyles.imageContainer}>
         <ImageBackground
-          source={{ uri: event.imageUrl }}
+          source={getSafeImageSource(event.imageUrl)}
           style={slideStyles.image}
           imageStyle={slideStyles.imageStyle}
         >

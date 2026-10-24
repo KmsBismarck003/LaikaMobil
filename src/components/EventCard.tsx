@@ -22,6 +22,7 @@ import { parseDateParts, getCategoryColor } from '../styles/designUtils';
 import { Typography } from './ui/Typography';
 import { CategoryBadge } from './ui/CategoryBadge';
 import { useStyles } from '../styles/useStyles';
+import { getSafeImageSource } from '../utils/imageUtils';
 
 interface EventCardProps {
   event: Event;
@@ -46,7 +47,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPress }) => {
     >
       <View style={styles.imageWrapper}>
         {event.imageUrl ? (
-          <Image source={{ uri: event.imageUrl }} style={styles.image} />
+          <Image source={getSafeImageSource(event.imageUrl)} style={styles.image} />
         ) : (
           <View style={[styles.image, styles.imagePlaceholder]}>
             <Feather name="image" size={24} color={theme.colors.textTertiary} />

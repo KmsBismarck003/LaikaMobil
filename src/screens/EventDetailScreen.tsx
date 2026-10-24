@@ -40,6 +40,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useStyles } from '../styles/useStyles';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { OfflineStateView } from '../components/ui/OfflineStateView';
+import { getSafeImageSource } from '../utils/imageUtils';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EventDetail'>;
 
@@ -61,23 +62,30 @@ export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { isOffline } = useNetworkStatus();
 
   const fetchDetail = async () => {
-      try {
-        setLoading(true);
-        const [data, busy] = await Promise.all([
-          EventService.getEventById(eventId),
-          EventService.getBusySeats(eventId),
-        ]);
-        setEvent(data);
-        setBusySeats(busy);
-        if (data?.functions && data.functions.length > 0) {
-          setSelectedFunction(data.functions[0]);
-        }
-      } catch (err: any) {
-        setError(err.message || 'Error al cargar el evento');
-      } finally {
-        setLoading(false);
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await EventService.getEventById(eventId);
+      setEvent(data);
+      if (data?.functions && data.functions.length > 0) {
+        setSelectedFunction(data.functions[0]);
       }
-    };
+
+      // Cargar asientos ocupados de forma resiliente para no bloquear la vista si el microservicio tarda
+      try {
+        const busy = await EventService.getBusySeats(eventId);
+        setBusySeats(busy);
+      } catch (seatErr) {
+        console.warn(`Asientos ocupados no disponibles para evento ${eventId}:`, seatErr);
+        setBusySeats([]);
+      }
+    } catch (err: any) {
+      console.error(`Error al cargar el evento ${eventId}:`, err);
+      setError(err.message || 'Error al cargar el evento');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchDetail();
@@ -331,7 +339,7 @@ export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 {event.galleryUrls.map((url: string, index: number) => (
                   <Image
                     key={index}
-                    source={{ uri: url }}
+                    source={getSafeImageSource(url)}
                     style={styles.galleryThumb}
                     resizeMode="cover"
                   />

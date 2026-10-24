@@ -30,6 +30,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useStyles } from '../styles/useStyles';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { UnauthenticatedView } from '../components/ui/UnauthenticatedView';
+import { getSafeImageSource } from '../utils/imageUtils';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Cart'>;
 
@@ -376,7 +377,7 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
         <View style={styles.previewCard}>
           {eventPreview.imageUrl && (
             <Image
-              source={{ uri: eventPreview.imageUrl }}
+              source={getSafeImageSource(eventPreview.imageUrl)}
               style={styles.previewImage}
               resizeMode="cover"
             />

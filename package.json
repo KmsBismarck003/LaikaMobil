@@ -37,6 +37,7 @@
   },
   "scripts": {
     "start": "expo start",
+    "tunnel": "npx localtunnel --port 8000 --subdomain laika-pilgrim-dev",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
