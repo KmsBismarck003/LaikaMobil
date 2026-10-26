@@ -64,7 +64,9 @@ export interface TransferRequestResult {
   transfer: TicketTransfer;
   registeredUser: boolean;
   claimUrl?: string;
-  expiresAt: string;
+  claimToken?: string;
+  recipientEmail?: string;
+  expiresAt?: string;
 }
 
 export const TicketService = {
@@ -138,13 +140,35 @@ export const TicketService = {
         recipient_email: recipientEmail.trim().toLowerCase(),
         password_confirm: passwordConfirm,
       });
+
+      const data = response.data || {};
+      const cleanEmail = data.recipient_email || data.transfer?.recipientEmail || recipientEmail.trim().toLowerCase();
+      const isRegistered = Boolean(data.is_registered_user ?? data.registered_user ?? data.transfer?.recipientUserId);
+      const claimToken = data.claim_token || data.transfer?.claimToken || '';
+      const claimUrl = data.claim_url || (claimToken ? `https://laikaclub.com/register?claim_token=${claimToken}` : '');
+
+      const transferObj: TicketTransfer = data.transfer || {
+        id: data.transfer_id || data.id || 0,
+        ticketIdOriginal: Number(ticketId),
+        senderUserId: data.sender_user_id || 0,
+        senderEmail: data.sender_email || '',
+        recipientEmail: cleanEmail,
+        status: data.status || (isRegistered ? 'PENDING' : 'PENDING_REGISTRATION'),
+        expiresAt: data.expires_at || '',
+        createdAt: data.created_at || new Date().toISOString(),
+      };
+
       return {
-        success: response.data.success,
-        message: response.data.message,
-        transfer: response.data.transfer,
-        registeredUser: response.data.registered_user,
-        claimUrl: response.data.claim_url,
-        expiresAt: response.data.expires_at,
+        success: data.success !== false,
+        message: data.message || (isRegistered
+          ? 'Solicitud de transferencia enviada al destinatario.'
+          : 'Invitación de transferencia generada exitosamente.'),
+        transfer: transferObj,
+        registeredUser: isRegistered,
+        claimUrl,
+        claimToken,
+        recipientEmail: cleanEmail,
+        expiresAt: data.expires_at || transferObj.expiresAt,
       };
     } catch (error: any) {
       const msg = error.response?.data?.message || error.message || 'Error al solicitar transferencia de boleto';

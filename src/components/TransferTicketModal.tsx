@@ -181,7 +181,7 @@ export const TransferTicketModal: React.FC<TransferTicketModalProps> = ({
                           Destinatario:
                         </Typography>
                         <Typography variant="caption" weight="700" color={theme.colors.text}>
-                          {result.transfer.recipientEmail}
+                          {result.transfer?.recipientEmail || result.recipientEmail || recipientEmail}
                         </Typography>
                       </View>
                       <View style={styles.summaryRow}>
@@ -234,7 +234,7 @@ export const TransferTicketModal: React.FC<TransferTicketModalProps> = ({
                       align="center"
                       style={{ marginTop: 8 }}
                     >
-                      El destinatario ({result.transfer.recipientEmail}) aún no tiene cuenta en LAIKA Club. Comparte este enlace exclusivo para que se registre y reclame el boleto:
+                      El destinatario ({result.transfer?.recipientEmail || result.recipientEmail || recipientEmail}) aún no tiene cuenta en LAIKA Club. Comparte este enlace exclusivo para que se registre y reclame el boleto:
                     </Typography>
 
                     {result.claimUrl && (
