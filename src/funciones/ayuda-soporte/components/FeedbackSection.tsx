@@ -6,11 +6,20 @@ import { useAppTheme } from '../../../styles/ThemeProvider';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export const FeedbackSection: React.FC = () => {
+interface Props {
+  onRequestSupport?: () => void;
+}
+
+export const FeedbackSection: React.FC<Props> = ({ onRequestSupport }) => {
   const { theme } = useAppTheme();
   const [feedbackGiven, setFeedbackGiven] = useState<'yes' | 'no' | null>(null);
 
   const handleContactSupport = async () => {
+    if (onRequestSupport) {
+      onRequestSupport();
+      return;
+    }
+
     const email = 'redjar481@gmail.com';
     const subject = 'Soporte LaikaMobil';
     const body = `Hola, equipo de Laika Club.\n\nNecesito ayuda con:\n[Describe aquí tu problema]\n\nPantalla o funcionalidad relacionada:\n[Indica dónde ocurre]\n\nInformación adicional:\n\n\nGracias.`;
@@ -28,6 +37,7 @@ export const FeedbackSection: React.FC = () => {
       Alert.alert("Error", `Ocurrió un error.\nEscríbenos directamente a:\n${email}`);
     }
   };
+
 
   return (
     <View style={styles.container}>
