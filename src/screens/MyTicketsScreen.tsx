@@ -31,7 +31,7 @@ import { biometricService } from '../services/security/BiometricService';
 import { TicketActionModal } from '../components/TicketActionModal';
 import { TicketCard } from '../components/ui/TicketCard';
 import { Typography } from '../components/ui/Typography';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useStyles } from '../styles/useStyles';
@@ -69,7 +69,7 @@ export const MyTicketsScreen = () => {
   const [isTransferModalVisible, setIsTransferModalVisible] = useState(false);
   const [isRedeemModalVisible, setIsRedeemModalVisible] = useState(false);
   const [giftTicket, setGiftTicket] = useState<Ticket | any | null>(null);
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(true);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const userFromHook = useAuth();
@@ -77,10 +77,14 @@ export const MyTicketsScreen = () => {
   const insets = useSafeAreaInsets();
 
   const loadData = useCallback(async () => {
-    if (!user) return;
+    const activeUser = user || getCurrentUser();
+    if (!activeUser) {
+      setLoading(false);
+      return;
+    }
     try {
       const [myTickets, myReqs, myIncoming] = await Promise.all([
-        TicketService.getMyTickets(user.id),
+        TicketService.getMyTickets(activeUser.id),
         CancellationService.getMyRequests(),
         TicketService.getIncomingTransfers(),
       ]);
@@ -103,6 +107,8 @@ export const MyTicketsScreen = () => {
       }
     } catch (error) {
       console.error('Error fetching tickets and transfers:', error);
+    } finally {
+      setLoading(false);
     }
   }, [user]);
 
@@ -112,29 +118,17 @@ export const MyTicketsScreen = () => {
     setRefreshing(false);
   };
 
-  useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const authenticateAndFetch = async () => {
-      try {
-        const success = await biometricService.authenticateUser('Desbloquea para ver tus boletos');
-        setIsUnlocked(success);
-
-        if (success) {
-          await loadData();
-        }
-      } catch (error) {
-        console.error(error);
-      } finally {
+  // Recargar boletos y verificar sesión activa cada vez que la pestaña entra en foco
+  useFocusEffect(
+    useCallback(() => {
+      const activeUser = user || getCurrentUser();
+      if (activeUser) {
+        loadData();
+      } else {
         setLoading(false);
       }
-    };
-
-    authenticateAndFetch();
-  }, [user, loadData]);
+    }, [user, loadData])
+  );
 
   const handleAcceptTransfer = async (transfer: TicketTransfer) => {
     try {
@@ -174,9 +168,22 @@ export const MyTicketsScreen = () => {
     navigation.navigate('TicketPass', { ticket });
   };
 
-  // ── Loading ──────────────────────────────────────────────────────────────
+  // ── Sin sesión ───────────────────────────────────────────────────────────
+  const activeUser = user || getCurrentUser();
 
-  if (loading) {
+  if (!activeUser) {
+    return (
+      <UnauthenticatedView 
+        title="Tus boletos te esperan"
+        subtitle="Inicia sesión para ver y gestionar tus boletos comprados."
+        buttonText="Iniciar Sesión"
+        onPressLogin={() => navigation.navigate('Login', {})}
+      />
+    );
+  }
+
+  // ── Loading inicial ──────────────────────────────────────────────────────
+  if (loading && tickets.length === 0) {
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator color={theme.colors.primary} size="large" />
@@ -184,21 +191,8 @@ export const MyTicketsScreen = () => {
     );
   }
 
-  // ── Sin sesión ───────────────────────────────────────────────────────────
-
-  if (!user) {
-    return (
-      <UnauthenticatedView 
-        title="Tus boletos te esperan"
-        subtitle="Inicia sesión para ver y gestionar tus boletos comprados."
-        buttonText="Iniciar Sesión"
-      />
-    );
-  }
-
   // ── Bloqueado por Biometría ──────────────────────────────────────────────
-
-  if (!isUnlocked && user) {
+  if (!isUnlocked && activeUser) {
     return (
       <View style={[styles.container, styles.centered]}>
         <View style={styles.emptyIconBox}>
@@ -219,7 +213,7 @@ export const MyTicketsScreen = () => {
               setIsUnlocked(true);
               setLoading(true);
               try {
-                const myTickets = await TicketService.getMyTickets(user.id);
+                const myTickets = await TicketService.getMyTickets(activeUser.id);
                 setTickets(myTickets);
               } catch (e) {
                 console.error(e);
