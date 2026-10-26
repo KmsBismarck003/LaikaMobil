@@ -69,7 +69,7 @@ export const MyTicketsScreen = () => {
   const [isTransferModalVisible, setIsTransferModalVisible] = useState(false);
   const [isRedeemModalVisible, setIsRedeemModalVisible] = useState(false);
   const [giftTicket, setGiftTicket] = useState<Ticket | any | null>(null);
-  const [isUnlocked, setIsUnlocked] = useState(true);
+  const [isUnlocked, setIsUnlocked] = useState(false);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const userFromHook = useAuth();
@@ -112,26 +112,70 @@ export const MyTicketsScreen = () => {
     }
   }, [user]);
 
+  const promptUnlockAndLoad = useCallback(async () => {
+    const activeUser = user || getCurrentUser();
+    if (!activeUser) {
+      setLoading(false);
+      return;
+    }
+
+    const isAvailable = await biometricService.isBiometricAvailable();
+    if (!isAvailable) {
+      // Dispositivo sin hardware biométrico ni bloqueo de pantalla (PIN/patrón/clave)
+      setIsUnlocked(true);
+      await loadData();
+      return;
+    }
+
+    setLoading(true);
+    const success = await biometricService.authenticateUser(
+      'Desbloquea con tu huella, rostro o PIN para ver tus boletos'
+    );
+
+    if (success) {
+      setIsUnlocked(true);
+      await loadData();
+    } else {
+      setIsUnlocked(false);
+      setLoading(false);
+    }
+  }, [user, loadData]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
   };
 
-  // Recargar boletos y verificar sesión activa cada vez que la pestaña entra en foco
+  // Recargar boletos y verificar seguridad de dispositivo cada vez que la pestaña entra en foco
   useFocusEffect(
     useCallback(() => {
       const activeUser = user || getCurrentUser();
-      if (activeUser) {
-        loadData();
-      } else {
+      if (!activeUser) {
         setLoading(false);
+        setIsUnlocked(false);
+        return;
       }
-    }, [user, loadData])
+
+      if (!isUnlocked) {
+        promptUnlockAndLoad();
+      } else {
+        loadData();
+      }
+    }, [user, isUnlocked, promptUnlockAndLoad, loadData])
   );
 
   const handleAcceptTransfer = async (transfer: TicketTransfer) => {
     try {
+      const isBioAvailable = await biometricService.isBiometricAvailable();
+      if (isBioAvailable) {
+        const bioSuccess = await biometricService.authenticateUser(
+          'Confirma con tu huella o PIN para aceptar este boleto'
+        );
+        if (!bioSuccess) {
+          return;
+        }
+      }
       await TicketService.acceptTransfer(transfer.id);
       Alert.alert('Boleto Aceptado', 'El boleto ha sido transferido a tu cuenta y se ha generado una nueva credencial con código QR.');
       await loadData();
@@ -182,16 +226,7 @@ export const MyTicketsScreen = () => {
     );
   }
 
-  // ── Loading inicial ──────────────────────────────────────────────────────
-  if (loading && tickets.length === 0) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator color={theme.colors.primary} size="large" />
-      </View>
-    );
-  }
-
-  // ── Bloqueado por Biometría ──────────────────────────────────────────────
+  // ── Bloqueado por Biometría / Seguridad del Dispositivo ──────────────────
   if (!isUnlocked && activeUser) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -202,32 +237,27 @@ export const MyTicketsScreen = () => {
           Apartado Protegido
         </Typography>
         <Typography variant="body" color={theme.colors.textSecondary} align="center" style={{ marginBottom: 24 }}>
-          Tus boletos están bloqueados por seguridad.
+          Tus boletos están protegidos por la seguridad de tu dispositivo. Desbloquea para continuar.
         </Typography>
         <TouchableOpacity
           style={[styles.tabItem, styles.tabItemActive, { paddingHorizontal: 24, paddingVertical: 12 }]}
           activeOpacity={0.7}
-          onPress={async () => {
-            const success = await biometricService.authenticateUser('Desbloquea para ver tus boletos');
-            if (success) {
-              setIsUnlocked(true);
-              setLoading(true);
-              try {
-                const myTickets = await TicketService.getMyTickets(activeUser.id);
-                setTickets(myTickets);
-              } catch (e) {
-                console.error(e);
-              } finally {
-                setLoading(false);
-              }
-            }
-          }}
+          onPress={promptUnlockAndLoad}
         >
           <Feather name="unlock" size={18} color={theme.colors.primary} />
           <Typography variant="body" weight="600" color={theme.colors.primary}>
             Desbloquear Boletos
           </Typography>
         </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // ── Loading inicial ──────────────────────────────────────────────────────
+  if (loading && tickets.length === 0) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator color={theme.colors.primary} size="large" />
       </View>
     );
   }

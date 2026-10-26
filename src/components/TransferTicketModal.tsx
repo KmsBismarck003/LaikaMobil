@@ -23,6 +23,7 @@ import { Typography } from './ui/Typography';
 import { Button } from './ui/Button';
 import { useStyles } from '../styles/useStyles';
 import { TicketService, Ticket, TransferRequestResult } from '../services/TicketService';
+import { biometricService } from '../services/security/BiometricService';
 
 interface TransferTicketModalProps {
   visible: boolean;
@@ -77,6 +78,19 @@ export const TransferTicketModal: React.FC<TransferTicketModalProps> = ({
     setErrorMsg(null);
 
     try {
+      // Verificación de seguridad del dispositivo (huella, rostro o PIN) si aplica
+      const isBioAvailable = await biometricService.isBiometricAvailable();
+      if (isBioAvailable) {
+        const authSuccess = await biometricService.authenticateUser(
+          'Autoriza la transferencia de tu boleto con tu huella, rostro o PIN'
+        );
+        if (!authSuccess) {
+          setErrorMsg('Autenticación cancelada. Se requiere verificar tu identidad en el dispositivo para autorizar la transferencia.');
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const res = await TicketService.requestTransfer(ticket.id, emailTrim, passwordConfirm);
       setResult(res);
       onSuccess(res);
@@ -354,7 +368,7 @@ export const TransferTicketModal: React.FC<TransferTicketModalProps> = ({
                     <View style={styles.securityWarning}>
                       <Feather name="shield" size={16} color={theme.colors.warning} />
                       <Typography variant="footnote" color={theme.colors.textSecondary} style={{ flex: 1 }}>
-                        Al completar la transferencia, tu código QR actual quedará invalidado y se emitirá una nueva credencial única para el destinatario.
+                        Se solicitará la verificación biométrica o PIN de tu dispositivo para autorizar la operación. Al completarse, tu código QR actual quedará invalidado y se emitirá una nueva credencial única para el destinatario.
                       </Typography>
                     </View>
 
