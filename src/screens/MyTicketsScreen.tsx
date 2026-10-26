@@ -26,6 +26,7 @@ import { Feather } from '@expo/vector-icons';
 import { useAppTheme } from '../styles/ThemeProvider';
 import { TicketService, Ticket, TicketTransfer } from '../services/TicketService';
 import { getCurrentUser } from '../store/AuthStore';
+import { useAuth } from '../hooks/useAuth';
 import { biometricService } from '../services/security/BiometricService';
 import { TicketActionModal } from '../components/TicketActionModal';
 import { TicketCard } from '../components/ui/TicketCard';
@@ -71,7 +72,8 @@ export const MyTicketsScreen = () => {
   const [isUnlocked, setIsUnlocked] = useState(false);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const user = getCurrentUser();
+  const userFromHook = useAuth();
+  const user = userFromHook || getCurrentUser();
   const insets = useSafeAreaInsets();
 
   const loadData = useCallback(async () => {

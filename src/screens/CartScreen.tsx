@@ -27,6 +27,7 @@ import { PaymentService, PaymentMethod } from '../services/PaymentService';
 import { PaymentMethodSelector } from '../components/PaymentMethodSelector';
 import { TicketService } from '../services/TicketService';
 import { useAuth } from '../hooks/useAuth';
+import { getCurrentUser } from '../store/AuthStore';
 import { useStyles } from '../styles/useStyles';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { UnauthenticatedView } from '../components/ui/UnauthenticatedView';
@@ -46,7 +47,8 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
   const { theme, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { eventPreview } = route.params || {};
-  const user = useAuth();
+  const userFromHook = useAuth();
+  const user = userFromHook || route.params?.user || getCurrentUser();
   const [loading, setLoading] = useState(false);
 
   // Payment State
@@ -54,7 +56,7 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
   const [methodsLoading, setMethodsLoading] = useState(true);
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
 
-  const userName = user?.name || user?.email?.split('@')[0] || 'Invitado';
+  const userName = user?.firstName || user?.name || user?.email?.split('@')[0] || 'Invitado';
 
   // --- MOTOR ANTI-FALLOS Y TEMPORIZADOR ---
   const { isOffline } = useNetworkStatus();
@@ -201,6 +203,19 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
         title="Tus reservaciones"
         subtitle="Inicia sesión para explorar eventos, guardar tus lugares favoritos y completar tus compras en segundos."
         buttonText="Iniciar Sesión"
+        onPressLogin={() => navigation.navigate('Login', { eventPreview: undefined })}
+      />
+    );
+  }
+
+  if (eventPreview && !user) {
+    return (
+      <UnauthenticatedView
+        title="Finaliza tu compra"
+        subtitle="Inicia sesión o crea una cuenta para completar tu reservación y emitir tus boletos oficiales."
+        buttonText="Iniciar Sesión"
+        eventPreview={eventPreview}
+        onPressLogin={() => navigation.navigate('Login', { eventPreview })}
       />
     );
   }

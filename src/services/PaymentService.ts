@@ -1,4 +1,5 @@
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentToken } from '../store/AuthStore';
 import { PILGRIM_API_URL } from '../api/config';
 
@@ -10,8 +11,13 @@ const paymentApi = axios.create({
   },
 });
 
-paymentApi.interceptors.request.use((config) => {
-  const token = getCurrentToken();
+paymentApi.interceptors.request.use(async (config) => {
+  let token = getCurrentToken();
+  if (!token) {
+    try {
+      token = await AsyncStorage.getItem('@laika_auth_token');
+    } catch {}
+  }
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

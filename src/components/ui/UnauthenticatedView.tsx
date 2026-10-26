@@ -143,15 +143,27 @@ interface UnauthenticatedViewProps {
   title?: string;
   subtitle?: string;
   buttonText?: string;
+  eventPreview?: any;
+  onPressLogin?: () => void;
 }
 
 export const UnauthenticatedView: React.FC<UnauthenticatedViewProps> = ({ 
   title = "Tu portal exclusivo", 
   subtitle = "Inicia sesión para desbloquear tu perfil y acceder a beneficios únicos.", 
-  buttonText = "Acceder a mi cuenta" 
+  buttonText = "Acceder a mi cuenta",
+  eventPreview,
+  onPressLogin,
 }) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
+
+  const handlePress = () => {
+    if (onPressLogin) {
+      onPressLogin();
+    } else {
+      navigation.navigate('Login', { eventPreview });
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0b0c16', paddingTop: insets.top }}>
@@ -181,7 +193,7 @@ export const UnauthenticatedView: React.FC<UnauthenticatedViewProps> = ({
             elevation: 5,
           }}
           activeOpacity={0.8}
-          onPress={() => navigation.navigate('Login', { eventPreview: undefined as any })}
+          onPress={handlePress}
         >
           <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '700', letterSpacing: 1 }}>
             {buttonText}

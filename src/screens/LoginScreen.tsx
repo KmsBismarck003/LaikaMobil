@@ -127,7 +127,8 @@ export const LoginScreen: React.FC<Props> = ({ route, navigation }) => {
       const data = await AuthService.login(email, password);
       
       if (data && data.user) {
-        setCurrentUser(data.user, data.access_token || data.token);
+        const token = data.access_token || data.token;
+        await setCurrentUser(data.user, token);
         const role = data.user.role?.toLowerCase() || 'usuario';
         
         if (role === 'usuario' || role === 'user') {

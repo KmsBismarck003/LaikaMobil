@@ -113,6 +113,11 @@ class HttpClient {
             // Ignorar si AuthStore no está disponible aún
           }
         }
+        if (!token) {
+          try {
+            token = await AsyncStorage.getItem('@laika_auth_token');
+          } catch {}
+        }
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -170,36 +175,58 @@ class HttpClient {
           this.isRefreshing = true;
 
           try {
-            const refreshToken = await tokenService.getRefreshToken();
-            if (!refreshToken) {
+            let activeToken = await tokenService.getAccessToken();
+            if (!activeToken) {
+              try {
+                const { getCurrentToken } = require('../store/AuthStore');
+                activeToken = getCurrentToken();
+              } catch {}
+            }
+            if (!activeToken) {
+              activeToken = await AsyncStorage.getItem('@laika_auth_token');
+            }
+
+            if (!activeToken) {
               this.isRefreshing = false;
               return Promise.reject(error);
             }
 
-            // Petición para obtener un nuevo token (Endpoint asimilado en Pilgrim)
-            const response = await axios.post(`${this.instance.defaults.baseURL}/auth/refresh`, {
-              refresh_token: refreshToken,
-            }, {
-              headers: { 'bypass-tunnel-reminder': 'true' }
-            });
+            // Renovación mediante el endpoint /auth/refresh con Bearer token
+            const response = await axios.post(
+              `${this.instance.defaults.baseURL}/auth/refresh`,
+              {},
+              {
+                headers: {
+                  Authorization: `Bearer ${activeToken}`,
+                  'bypass-tunnel-reminder': 'true',
+                },
+              }
+            );
 
-            const { access_token, refresh_token: new_refresh_token } = response.data;
-            
-            await tokenService.setAccessToken(access_token);
-            if (new_refresh_token) {
-              await tokenService.setRefreshToken(new_refresh_token);
+            const newToken = response.data.token || response.data.access_token;
+            if (!newToken) {
+              this.isRefreshing = false;
+              return Promise.reject(error);
             }
 
-            this.onRefreshed(access_token);
-            
+            await tokenService.setAccessToken(newToken);
+            await AsyncStorage.setItem('@laika_auth_token', newToken);
+
+            try {
+              const { setCurrentUser, getCurrentUser } = require('../store/AuthStore');
+              const usr = getCurrentUser();
+              if (usr) {
+                await setCurrentUser(usr, newToken);
+              }
+            } catch {}
+
+            this.onRefreshed(newToken);
+
             if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${access_token}`;
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
             }
             return this.instance(originalRequest);
-
           } catch (refreshError) {
-            // Falló el refresh token (sesión expirada por completo)
-            await tokenService.clearTokens();
             return Promise.reject(refreshError);
           } finally {
             this.isRefreshing = false;

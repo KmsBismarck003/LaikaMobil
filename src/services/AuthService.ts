@@ -53,5 +53,16 @@ export const AuthService = {
       console.warn('Error in getMe');
       throw error;
     }
+  },
+  refreshToken: async (token: string): Promise<string> => {
+    try {
+      const response = await authApi.post('/auth/refresh', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data.token || response.data.access_token;
+    } catch (error: any) {
+      console.warn('Error in refreshToken');
+      throw error;
+    }
   }
 };

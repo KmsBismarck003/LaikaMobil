@@ -11,8 +11,13 @@ const ticketApi = axios.create({
   },
 });
 
-ticketApi.interceptors.request.use((config) => {
-  const token = getCurrentToken();
+ticketApi.interceptors.request.use(async (config) => {
+  let token = getCurrentToken();
+  if (!token) {
+    try {
+      token = await AsyncStorage.getItem('@laika_auth_token');
+    } catch {}
+  }
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

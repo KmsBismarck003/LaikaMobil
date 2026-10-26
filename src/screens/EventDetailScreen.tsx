@@ -37,6 +37,7 @@ import { InteractiveVenueMap } from '../components/InteractiveVenueMap';
 import { AuthPromptModal } from '../components/AuthPromptModal';
 import { TicketSelectionPanel } from '../components/TicketSelectionPanel';
 import { useAuth } from '../hooks/useAuth';
+import { getCurrentUser } from '../store/AuthStore';
 import { useStyles } from '../styles/useStyles';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { OfflineStateView } from '../components/ui/OfflineStateView';
@@ -122,8 +123,9 @@ export const EventDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       imageUrl: event.imageUrl,
     };
 
-    if (user) {
-      navigation.navigate('Cart', { eventPreview });
+    const activeUser = user || getCurrentUser();
+    if (activeUser) {
+      navigation.navigate('Cart', { user: activeUser, eventPreview });
     } else {
       setShowLoginModal(true);
     }
