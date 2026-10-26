@@ -39,8 +39,14 @@ export const refreshSession = async () => {
       await AsyncStorage.setItem('user', JSON.stringify(currentUser));
       listeners.forEach(l => l());
     }
-  } catch (e) {
-    console.error('Error refreshSession (background sync):', e);
+  } catch (e: any) {
+    if (e.response?.status === 401) {
+      // Sesión expirada en el backend: limpiar credenciales locales de forma transparente
+      console.warn('ℹ️ [AuthStore] Sesión previa expirada en el servidor (401). Restableciendo sesión...');
+      await logout();
+    } else {
+      console.warn('⚠️ [AuthStore] Sincronización en segundo plano no disponible:', e.message || 'Sin conexión');
+    }
   }
 };
 
