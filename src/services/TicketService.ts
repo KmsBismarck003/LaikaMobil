@@ -123,6 +123,12 @@ export const TicketService = {
         ...purchaseData,
         user_id: userId
       });
+
+      // Asegurar que la caché offline local se invalide para reconciliar con la nube
+      try {
+        await AsyncStorage.removeItem(`@tickets_cache_${userId}`);
+      } catch {}
+
       return response.data;
     } catch (error) {
       console.error('Error purchasing ticket:', error);

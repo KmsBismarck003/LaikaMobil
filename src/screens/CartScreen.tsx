@@ -26,6 +26,7 @@ import { Typography } from '../components/ui/Typography';
 import { PaymentService, PaymentMethod } from '../services/PaymentService';
 import { PaymentMethodSelector } from '../components/PaymentMethodSelector';
 import { TicketService } from '../services/TicketService';
+import { TicketSyncService } from '../services/TicketSyncService';
 import { useAuth } from '../hooks/useAuth';
 import { getCurrentUser } from '../store/AuthStore';
 import { useStyles } from '../styles/useStyles';
@@ -172,7 +173,8 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
       if (!user) {
         throw new Error('Debes iniciar sesión para comprar.');
       }
-      await TicketService.purchaseTicket(user.id, {
+
+      const syncResult = await TicketSyncService.createTicketPurchase(user.id, {
         items: purchaseItems,
         paymentMethod: 'card',
         paymentId: intentResponse.paymentId || `pi_${Date.now()}`,
@@ -180,6 +182,10 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
         shippingInfo: null,
         shippingMethod: 'digital',
       });
+
+      if (!syncResult.success) {
+        throw new Error(syncResult.errorMessage || 'No se pudo sincronizar la compra con el servidor.');
+      }
 
       navigation.navigate('Success', {
         userName,
@@ -189,8 +195,8 @@ export const CartScreen: React.FC<Props> = ({ route, navigation }) => {
       });
     } catch (error: any) {
       console.error(error);
-      const detail = error.response?.data?.detail || error.message;
-      Alert.alert('Error', `Hubo un problema al procesar tu pago: ${detail}`);
+      const detail = error.message || 'Error al procesar la compra.';
+      Alert.alert('Error de Compra', detail);
     } finally {
       setLoading(false);
     }

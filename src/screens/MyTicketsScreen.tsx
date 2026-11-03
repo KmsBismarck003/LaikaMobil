@@ -25,6 +25,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import { useAppTheme } from '../styles/ThemeProvider';
 import { TicketService, Ticket, TicketTransfer } from '../services/TicketService';
+import { TicketSyncService } from '../services/TicketSyncService';
+import { SyncStatusBadge } from '../components/ui/SyncStatusBadge';
+import { SyncState } from '../types/sync';
 import { getCurrentUser } from '../store/AuthStore';
 import { useAuth } from '../hooks/useAuth';
 import { biometricService } from '../services/security/BiometricService';
@@ -70,6 +73,8 @@ export const MyTicketsScreen = () => {
   const [isRedeemModalVisible, setIsRedeemModalVisible] = useState(false);
   const [giftTicket, setGiftTicket] = useState<Ticket | any | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [syncState, setSyncState] = useState<SyncState>('idle');
+  const [lastSyncTimestamp, setLastSyncTimestamp] = useState<number | null>(null);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const userFromHook = useAuth();
@@ -80,15 +85,20 @@ export const MyTicketsScreen = () => {
     const activeUser = user || getCurrentUser();
     if (!activeUser) {
       setLoading(false);
+      setSyncState('idle');
       return;
     }
+    setSyncState('syncing');
     try {
-      const [myTickets, myReqs, myIncoming] = await Promise.all([
-        TicketService.getMyTickets(activeUser.id),
+      const [syncResult, myReqs, myIncoming] = await Promise.all([
+        TicketSyncService.syncTickets(String(activeUser.id)),
         CancellationService.getMyRequests(),
         TicketService.getIncomingTransfers(),
       ]);
+      const myTickets = syncResult.data || [];
       setTickets(myTickets);
+      setSyncState(syncResult.success ? 'synced' : (syncResult.fromCache ? 'offline' : 'error'));
+      setLastSyncTimestamp(syncResult.syncTimestamp);
       setRefundRequests(myReqs);
       setIncomingTransfers(myIncoming.filter((t) => t.status === 'PENDING'));
 
@@ -107,6 +117,7 @@ export const MyTicketsScreen = () => {
       }
     } catch (error) {
       console.error('Error fetching tickets and transfers:', error);
+      setSyncState('error');
     } finally {
       setLoading(false);
     }
@@ -269,13 +280,18 @@ export const MyTicketsScreen = () => {
 
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <View style={{ flex: 1, marginRight: 8 }}>
           <Typography variant="display" color={theme.colors.text} style={styles.headerTitle}>
             Mis Boletos
           </Typography>
           <Typography variant="footnote" color={theme.colors.textSecondary}>
             {tickets.length} {tickets.length === 1 ? 'boleto' : 'boletos'} en total
           </Typography>
+          <SyncStatusBadge
+            status={syncState}
+            lastSyncTimestamp={lastSyncTimestamp}
+            onPressRetry={loadData}
+          />
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

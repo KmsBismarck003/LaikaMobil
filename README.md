@@ -1,74 +1,157 @@
-# LaikaMobil
+# LaikaMobil - Aplicacion Movil (React Native + Expo)
 
-LaikaMobil is a mobile application built with React Native and Expo designed for event discovery, ticket purchasing, and digital ticket management. The application interfaces with the Pilgrim API to provide real-time data, secure authentication, and a seamless user experience.
+Aplicacion movil oficial de LAIKA Club para compra de boletos, catalogo de eventos, boveda digital con codigos QR para acceso a recintos, y gestion de perfil, optimizada para Android e iOS.
 
-## Technologies Used
+---
 
-- Framework: React Native with Expo
-- Navigation: React Navigation (Bottom Tabs, Native Stack)
-- Network Requests: Axios
-- State Management: Custom AuthStore leveraging pattern subscriptions
-- Local Storage: AsyncStorage and Expo SecureStore
-- UI Enhancements: Expo Blur, Expo Linear Gradient
-- Assets: React Native QRCode SVG
+## 1. Descripcion General
 
-## Project Structure
+`LaikaMobil` traslada la experiencia de usuario de LAIKA Club a dispositivos moviles nativos. Proporciona autenticacion biometrica (FaceID y huella dactilar), persistencia segura de credenciales, navegacion por categorias de espectaculos, mapas visuales de recintos para eleccion de asientos, pasarela de compras integrada y una boveda de boletos digitales con codigos QR dinamicos legibles por las terminales de los operadores en torniquetes.
 
-The source code is organized within the `src/` directory to maintain separation of concerns:
+La aplicacion se conecta de forma transparente con el backend mediante el API Gateway Pilgrim, ya sea en red local durante desarrollo o a traves de tuneles seguros para pruebas en dispositivos fisicos externos.
 
-- `api/`: Configuration for Axios instances and API base URLs.
-- `components/`: Reusable UI elements (`ui/` subfolder) and domain-specific complex components (e.g., interactive maps, filter bars).
-- `hooks/`: Custom React hooks to abstract business logic and state selection.
-- `screens/`: Top-level React components representing individual application views.
-- `services/`: Encapsulated modules for handling backend API communication (Auth, Events, Tickets, Payments, Users).
-- `store/`: Global state management, primarily handling user session and authentication tokens.
-- `styles/`: Comprehensive design system containing theme definitions (Light/Dark modes), typography, and style utilities.
+---
 
-## Setup and Installation
+## 2. Stack Tecnologico
 
-### Prerequisites
+- **Framework Movil**: React Native 0.88.0 con Expo SDK 58.0.0
+- **Nucleo de Componentes**: React 19.3.0
+- **Tipado Estatico**: TypeScript 6.0.3
+- **Navegacion Nativa**: React Navigation 7.x (`@react-navigation/native`, `@react-navigation/native-stack`, `@react-navigation/bottom-tabs`)
+- **Animaciones de Alto Rendimiento**: React Native Reanimated 4.7.1
+- **Almacenamiento Local Seguro**: Expo SecureStore (tokens JWT) y AsyncStorage (preferencias y cache)
+- **Autenticacion Biometrica**: Expo Local Authentication (FaceID / Fingerprint)
+- **Notificaciones Push**: Expo Notifications
+- **Graficos Vectoriales y QR**: React Native SVG 15.16.0 y `react-native-qrcode-svg` 6.3.26
+- **Efectos Visuales**: Expo Blur (desenfoques glassmorphic) y Expo Linear Gradient
+- **Cliente de Red**: Axios 1.20.0
 
-Ensure you have the following installed in your development environment:
-- Node.js (v18 or higher recommended)
-- npm (Node Package Manager)
-- Expo CLI
+---
 
-### Installation Steps
+## 3. Arquitectura y Enlace con el API Gateway
 
-1. Navigate to the project directory.
-2. Install the required dependencies:
-   ```bash
-   npm install
-   ```
-3. Configure the environment variables. Create a `.env` file in the root directory and specify the backend API URL:
-   ```env
-   EXPO_PUBLIC_PILGRIM_API_URL=http://your-backend-ip:8000/api
-   ```
-4. Start the Expo development server:
-   ```bash
-   npm run start
-   ```
-5. Scan the QR code generated in the terminal using the Expo Go application on your physical device, or press `a` for Android emulator / `i` for iOS simulator.
+La aplicacion canaliza todas sus consultas hacia el API Gateway Pilgrim mediante la variable de entorno `EXPO_PUBLIC_PILGRIM_API_URL`:
 
-## Available Scripts
+```
+[ Dispositivo Fisico (Android / iOS) / Emulador ]
+                      |
+                      | HTTPS / HTTP
+                      v
+      [ Pilgrim API Gateway (Puerto 8000) ]
+        (Directo en LAN o via LocalTunnel)
+                      |
+     +----------------+----------------+
+     |                                 |
+     v                                 v
+[ Microservicios Java ]      [ Microservicios Python / Node ]
+(Auth, Events, Tickets, Merch)    (BigData, Wearables)
+```
 
-- `npm run start`: Starts the Expo packager.
-- `npm run android`: Starts the application on an active Android emulator or connected device.
-- `npm run ios`: Starts the application on an active iOS simulator.
-- `npm run lint`: Analyzes the codebase for syntax and style issues using ESLint.
+### Modos de Conexion
+1. **Emulador Android / Simulador iOS**:
+   - Android Emulator: Conectar a `http://10.0.2.2:8000/api`
+   - iOS Simulator: Conectar a `http://localhost:8000/api`
+2. **Dispositivo Fisico en Red WiFi Local**:
+   - Conectar a la IP local de tu estacion de trabajo: `http://192.168.X.X:8000/api`
+3. **Dispositivo Fisico en Red Movil (4G / 5G / Remota)**:
+   - Iniciar el tunel en la maquina anfitriona: `npm run tunnel` o ejecutando `iniciar_tunel_pilgrim.bat`.
+   - Asignar la URL del tunel: `https://laika-pilgrim-dev.loca.lt/api`
 
-## Core Features
+---
 
-- User Authentication: Secure login flow with persistent session storage.
-- Event Catalog: Browse and search available events.
-- Event Details: Access detailed event information, image galleries, and schedules.
-- Venue Interaction: Select tickets through an interactive venue seating map.
-- Checkout Flow: Shopping cart management and payment intent generation.
-- Digital Wallet: Access purchased tickets equipped with scannable QR codes for event entry.
-- Theming: Full support for Light, Dark, and System appearance preferences.
+## 4. Funcionalidades Principales
 
-## Architecture Guidelines
+1. **Autenticacion y Seguridad Biometrica**:
+   - Inicio de sesion y registro de nuevas cuentas con validacion de fortaleza de contrasena.
+   - Activacion opcional de FaceID / Huella Dactilar para desbloqueo rapido de la boveda.
+   - Renovacion transparente de sesion con tokens persistidos en almacenamiento cifrado.
 
-- All external API calls must be routed through the appropriate module in the `services/` directory.
-- UI components must avoid hardcoded colors or spacing. Always utilize the `useAppTheme` and `useStyles` hooks to ensure compatibility with the global design system.
-- Application routing and navigation structures are centralized within `App.tsx`.
+2. **Exploracion de Cartelera y Eventos**:
+   - Busqueda por artista, genero, fecha y recinto.
+   - Detalle de evento con galeria visual, funciones disponibles y mapa de ubicacion.
+
+3. **Seleccion de Asientos y Zonas**:
+   - Visualizacion de zonas (General, Preferente, VIP, Palcos) y disponibilidad en tiempo real.
+   - Carrito de compras integrado con temporizador de retencion de asientos.
+
+4. **Boveda de Boletos Digitales (Wallet)**:
+   - Despliegue de boletos adquiridos con renderizado SVG de codigos QR de alta definicion.
+   - Consulta de detalles de acceso: fecha, recinto, puerta sugerida, zona, fila y numero de asiento.
+   - Modo de alto brillo automatico para optimizar la lectura en escaneres opticos de torniquetes.
+
+5. **Soporte Multitema (Dark / Light)**:
+   - Adaptacion automatica a las preferencias del sistema del dispositivo o seleccion manual por el usuario.
+
+---
+
+## 5. Estructura del Proyecto
+
+```
+LaikaMobil/
+├── src/
+│   ├── api/                 # Configuracion de cliente Axios e interceptores
+│   ├── components/          # Componentes reutilizables
+│   │   ├── ui/              # Botones, inputs, tarjetas, badges
+│   │   └── tickets/         # Renderizado de boletos digitales y codigos QR
+│   ├── hooks/               # Custom hooks de navegacion, autenticacion y temas
+│   ├── navigation/          # Configuracion de BottomTabs y Stacks
+│   ├── screens/             # Pantallas de la aplicacion
+│   │   ├── auth/            # Login, Registro y configuracion biometrica
+│   │   ├── events/          # Catalogo de eventos y detalle
+│   │   ├── checkout/        # Proceso de pago y confirmacion
+│   │   ├── wallet/          # Boveda de boletos y visualizador de QR
+│   │   └── profile/         # Perfil de usuario y ajustes
+│   ├── services/            # Modulos de consumo API (Auth, Events, Tickets, Merch)
+│   ├── store/               # Gestion de estado global y sesion
+│   └── styles/              # Design System, tokens semanticos y paletas de color
+├── App.tsx                  # Componente raiz y contenedor de navegacion
+├── app.json                 # Metadatos del proyecto Expo
+├── package.json
+└── tsconfig.json
+```
+
+---
+
+## 6. Instalacion y Puesta en Marcha
+
+### Prerrequisitos
+- Node.js version 18 o superior.
+- Expo Go instalado en tu dispositivo movil (disponible en Google Play Store y Apple App Store) o emulador configurado (Android Studio / Xcode).
+- API Gateway Pilgrim ejecutandose en el puerto 8000.
+
+### Paso 1: Instalacion de Paquetes
+```bash
+cd LaikaMobil
+npm install
+```
+
+### Paso 2: Configuracion de Variables de Entorno
+Crea un archivo `.env` en la raiz de `LaikaMobil`:
+```env
+EXPO_PUBLIC_PILGRIM_API_URL=http://TU_IP_LOCAL:8000/api
+```
+*(Reemplaza `TU_IP_LOCAL` por la IP interna de tu computadora en la red WiFi, o la URL de LocalTunnel).*
+
+### Paso 3: Inicializacion del Servidor de Desarrollo
+```bash
+npm run start
+```
+Se presentara un codigo QR en la terminal. Abre la aplicacion **Expo Go** en tu dispositivo movil y escanea el codigo QR para iniciar la ejecucion.
+
+### Comandos Adicionales
+- Iniciar en Emulador Android:
+  ```bash
+  npm run android
+  ```
+- Iniciar en Simulador iOS (requiere macOS):
+  ```bash
+  npm run ios
+  ```
+- Abrir tunel remoto para pruebas fuera de la red local:
+  ```bash
+  npm run tunnel
+  ```
+- Ejecutar analisis estatico con ESLint:
+  ```bash
+  npm run lint
+  ```
