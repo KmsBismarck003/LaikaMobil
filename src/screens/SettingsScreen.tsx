@@ -265,7 +265,7 @@ export const SettingsScreen: React.FC = () => {
             <TouchableOpacity 
               style={styles.row} 
               activeOpacity={0.7}
-              onPress={() => Linking.openURL('https://laikaclub.com/privacidad')}
+              onPress={() => Linking.openURL('https://laikaweb.vercel.app/privacidad.html')}
             >
               <View style={[styles.iconBox, { backgroundColor: theme.colors.surfaceHighlight }]}>
                 <Feather name="shield" size={18} color={theme.colors.textTertiary} />

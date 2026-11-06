@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions, ActivityIndicator, Animated, Easing, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions, ActivityIndicator, Animated, Easing, ScrollView, Alert, Linking } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useAppTheme } from '../styles/ThemeProvider';
@@ -101,8 +102,11 @@ export const RegisterScreen: React.FC<Props> = ({ route, navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const PRIVACY_URL = 'https://laikaweb.vercel.app/privacidad.html';
 
   const validateInputs = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -121,8 +125,7 @@ export const RegisterScreen: React.FC<Props> = ({ route, navigation }) => {
     return true;
   };
 
-  const handleRegister = async () => {
-    if (!validateInputs()) return;
+  const proceedRegister = async () => {
     try {
       setLoading(true);
       setErrorMsg('');
@@ -153,6 +156,37 @@ export const RegisterScreen: React.FC<Props> = ({ route, navigation }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRegister = async () => {
+    if (!validateInputs()) return;
+
+    if (!acceptedTerms) {
+      Alert.alert(
+        'Términos y Aviso de Privacidad',
+        'Para crear tu cuenta en LAIKA Club, es necesario que aceptes nuestros Términos de Servicio y el Aviso de Privacidad.',
+        [
+          {
+            text: 'Ver Políticas',
+            onPress: () => Linking.openURL(PRIVACY_URL),
+          },
+          {
+            text: 'Aceptar y Registrar',
+            onPress: () => {
+              setAcceptedTerms(true);
+              proceedRegister();
+            },
+          },
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
+        ]
+      );
+      return;
+    }
+
+    proceedRegister();
   };
 
   return (
@@ -207,6 +241,31 @@ export const RegisterScreen: React.FC<Props> = ({ route, navigation }) => {
               value={confirmPassword}
               onChangeText={setConfirmPassword}
             />
+          </View>
+
+          <View style={styles.termsContainer}>
+            <TouchableOpacity 
+              style={styles.checkboxContainer} 
+              activeOpacity={0.7}
+              onPress={() => setAcceptedTerms(!acceptedTerms)}
+            >
+              <View style={[styles.checkbox, acceptedTerms && styles.checkboxActive]}>
+                {acceptedTerms ? (
+                  <Ionicons name="checkmark" size={14} color="#fff" />
+                ) : null}
+              </View>
+            </TouchableOpacity>
+            <View style={styles.termsTextContainer}>
+              <Text style={styles.termsText}>
+                He leído y acepto los{' '}
+                <Text 
+                  style={styles.termsLink}
+                  onPress={() => Linking.openURL(PRIVACY_URL)}
+                >
+                  Términos y el Aviso de Privacidad
+                </Text>
+              </Text>
+            </View>
           </View>
 
           <TouchableOpacity 
@@ -296,6 +355,44 @@ const styles = StyleSheet.create({
     height: 55,
     color: '#FFF',
     fontSize: 16,
+  },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 16,
+    paddingHorizontal: 6,
+  },
+  checkboxContainer: {
+    marginRight: 12,
+    padding: 2,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: 'rgba(78, 168, 222, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  checkboxActive: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  termsTextContainer: {
+    flex: 1,
+  },
+  termsText: {
+    color: '#a0a3b1',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  termsLink: {
+    color: '#4ea8de',
+    textDecorationLine: 'underline',
+    fontWeight: '600',
   },
   registerBtn: {
     height: 55,

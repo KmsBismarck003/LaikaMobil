@@ -10,6 +10,9 @@ sslPinningService.initializePinning();
 
 const ASYNC_STORAGE_OVERRIDE_KEY = '@laika_custom_api_url';
 
+// URL Oficial de Pilgrim API Gateway en Producción (Azure Cloud HTTPS)
+export const PRODUCTION_PILGRIM_URL = 'https://laikaclub-nzhwq8.southcentralus.cloudapp.azure.com/api';
+
 /**
  * Obtiene dinámicamente la IP de la máquina donde se ejecuta Expo / Metro bundler.
  * Cuando el celular se conecta a Expo en la misma red Wi-Fi, Constants.expoConfig?.hostUri
@@ -34,39 +37,42 @@ export const getAutoDetectedHost = (): string => {
 };
 
 const resolveApiUrl = (envVar: string | undefined, name: string): string => {
-  const autoHost = getAutoDetectedHost();
+  // Soporte defensivo para EXPO_PUBLIC_ y compatibilidad con VITE_
+  const candidate = envVar || (process.env as any).VITE_PILGRIM_API_URL || '';
+  const cleanVar = candidate ? candidate.trim() : '';
 
-  // 1. Si no hay variable definida, o es "auto", usamos la IP detectada automáticamente
-  if (!envVar || envVar.trim().toLowerCase() === 'auto' || envVar.trim() === '') {
-    const fallback = `http://${autoHost}:8000/api`;
+  // 1. Descartar túneles obsoletos o caídos (loca.lt, ngrok, localtunnel)
+  if (cleanVar.includes('loca.lt') || cleanVar.includes('ngrok') || cleanVar.includes('localtunnel')) {
     if (__DEV__) {
-      console.log(`📡 [Network Auto-Detect] ${name} configurada dinámicamente a: ${fallback}`);
+      console.log(`⚠️ [Network] Descartando túnel temporal (${cleanVar}). Apuntando a Azure: ${PRODUCTION_PILGRIM_URL}`);
     }
-    return fallback;
+    return PRODUCTION_PILGRIM_URL;
   }
 
-  const cleanVar = envVar.trim();
-
-  // 2. Si es una URL de Túnel público o Nube (HTTPS / dominio público como localtunnel, trycloudflare, ngrok o prod)
-  if (cleanVar.startsWith('https://') || (!cleanVar.includes('192.168.') && !cleanVar.includes('10.') && !cleanVar.includes('localhost') && !cleanVar.includes('127.0.0.1'))) {
+  // 2. Si se especificó una URL explícita (Producción HTTPS u host configurado)
+  if (cleanVar && cleanVar.toLowerCase() !== 'auto') {
+    const normalized = cleanVar.endsWith('/api') ? cleanVar : `${cleanVar.replace(/\/+$/, '')}/api`;
     if (__DEV__) {
-      console.log(`🌐 [Network Global Tunnel] Usando túnel público o nube para ${name}: ${cleanVar}`);
+      console.log(`🌐 [Network URL] ${name} configurada a: ${normalized}`);
     }
-    return cleanVar;
+    return normalized;
   }
 
-  // 3. Si en .env se especificó una IP local (ej. 192.168.x.x o localhost):
-  // Si en desarrollo Expo detecta que la IP de la máquina actual cambió en la nueva red,
-  // la actualizamos automáticamente para que nunca se quede obsoleta:
-  if (__DEV__ && autoHost && autoHost !== 'localhost' && autoHost !== '10.0.2.2') {
-    const replaced = cleanVar.replace(/192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|localhost|127\.0\.0\.1/, autoHost);
-    if (replaced !== cleanVar) {
-      console.log(`🔄 [Network Auto-Sync] IP local ajustada a la red actual (${autoHost}): ${replaced}`);
-      return replaced;
+  // 3. Si se solicitó "auto" explícitamente y estamos en modo desarrollo (__DEV__)
+  if (__DEV__ && cleanVar.toLowerCase() === 'auto') {
+    const autoHost = getAutoDetectedHost();
+    if (autoHost && autoHost !== 'localhost' && autoHost !== '10.0.2.2') {
+      const lanUrl = `http://${autoHost}:8000/api`;
+      console.log(`📡 [Network Auto-Detect LAN] ${name} configurada dinámicamente a: ${lanUrl}`);
+      return lanUrl;
     }
   }
 
-  return cleanVar;
+  // 4. Producción oficial canónica (Azure Cloud con HTTPS)
+  if (__DEV__) {
+    console.log(`🚀 [Network Production Gateway] ${name} conectada a: ${PRODUCTION_PILGRIM_URL}`);
+  }
+  return PRODUCTION_PILGRIM_URL;
 };
 
 export const PILGRIM_API_URL = resolveApiUrl(process.env.EXPO_PUBLIC_PILGRIM_API_URL, 'EXPO_PUBLIC_PILGRIM_API_URL');
@@ -136,7 +142,7 @@ class HttpClient {
       async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-        // Failover automático: Si el túnel remoto se desconectó (502, 503 o Network Error),
+        // Failover automático: Solo si se estaba usando un túnel temporal caído (localtunnel / ngrok),
         // y detectamos la IP local de la computadora por Wi-Fi, conmutar en caliente a la red local
         if (
           __DEV__ &&
@@ -145,11 +151,12 @@ class HttpClient {
           (!error.response || error.response.status === 502 || error.response.status === 503 || error.code === 'ERR_NETWORK')
         ) {
           const currentBase = this.instance.defaults.baseURL || '';
+          const isTemporaryTunnel = currentBase.includes('loca.lt') || currentBase.includes('ngrok') || currentBase.includes('localtunnel');
           const autoHost = getAutoDetectedHost();
           const localBase = `http://${autoHost}:8000/api`;
 
-          if (currentBase.startsWith('https://') && autoHost && autoHost !== 'localhost' && autoHost !== '10.0.2.2') {
-            console.warn(`🔄 [Network Auto-Failover] Túnel caído (${error.message}). Conmutando en caliente a LAN: ${localBase}`);
+          if (isTemporaryTunnel && autoHost && autoHost !== 'localhost' && autoHost !== '10.0.2.2') {
+            console.warn(`🔄 [Network Auto-Failover] Túnel temporal caído (${error.message}). Conmutando en caliente a LAN: ${localBase}`);
             originalRequest._retry = true;
             this.setBaseURL(localBase);
             originalRequest.baseURL = localBase;
@@ -297,31 +304,49 @@ export const setCustomApiUrl = async (newUrl: string): Promise<void> => {
 };
 
 /**
- * Restaura la URL de la API al valor por defecto (túnel o auto-detección).
+ * Restaura la URL de la API al valor por defecto (Producción Azure HTTPS).
  */
 export const resetToDefaultApiUrl = async (): Promise<void> => {
   await AsyncStorage.removeItem(ASYNC_STORAGE_OVERRIDE_KEY);
   pilgrimApiClient.setBaseURL(PILGRIM_API_URL);
   userApiClient.setBaseURL(USER_API_URL);
-  console.log(`🔄 [Network] URL de API restaurada a valor por defecto: ${PILGRIM_API_URL}`);
+  console.log(`🔄 [Network] URL de API restaurada a valor oficial: ${PILGRIM_API_URL}`);
 };
 
 /**
- * Inicializa la URL almacenada si el usuario configuró una manualmente previamente.
+ * Inicializa y valida la URL de API activa.
+ * Purga automáticamente cualquier URL obsoleta, túnel previo (loca.lt / ngrok) o IP local
+ * que haya quedado en el AsyncStorage del dispositivo para garantizar que la app
+ * se conecte de forma inmediata y estable a Pilgrim en Azure.
  */
 export const initStoredApiUrl = async (): Promise<string> => {
   try {
     const saved = await AsyncStorage.getItem(ASYNC_STORAGE_OVERRIDE_KEY);
     if (saved) {
-      pilgrimApiClient.setBaseURL(saved);
-      userApiClient.setBaseURL(saved);
-      console.log(`📦 [Network] URL de API cargada desde almacenamiento: ${saved}`);
-      return saved;
+      if (
+        saved !== PRODUCTION_PILGRIM_URL ||
+        saved.includes('loca.lt') ||
+        saved.includes('ngrok') ||
+        saved.includes('192.168.') ||
+        saved.includes('10.0.') ||
+        saved.includes('localhost') ||
+        saved.includes('127.0.0.1')
+      ) {
+        await AsyncStorage.removeItem(ASYNC_STORAGE_OVERRIDE_KEY);
+        console.log(`🧹 [Network] URL previa obsoleta purgada de AsyncStorage (${saved}).`);
+      } else {
+        pilgrimApiClient.setBaseURL(saved);
+        userApiClient.setBaseURL(saved);
+        console.log(`📦 [Network] URL de API cargada desde almacenamiento: ${saved}`);
+        return saved;
+      }
     }
   } catch {
     // Silencioso
   }
-  return pilgrimApi.defaults.baseURL || PILGRIM_API_URL;
+  pilgrimApiClient.setBaseURL(PILGRIM_API_URL);
+  userApiClient.setBaseURL(USER_API_URL);
+  return PILGRIM_API_URL;
 };
 
 // Cargar URL guardada de inmediato

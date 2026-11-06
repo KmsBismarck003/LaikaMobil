@@ -1,18 +1,9 @@
-import axios from 'axios';
-import { PILGRIM_API_URL } from '../api/config';
-
-const authApi = axios.create({
-  baseURL: PILGRIM_API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'bypass-tunnel-reminder': 'true',
-  },
-});
+import { pilgrimApi } from '../api/config';
 
 export const AuthService = {
   login: async (email: string, password: string) => {
     try {
-      const response = await authApi.post('/auth/login', { email, password });
+      const response = await pilgrimApi.post('/auth/login', { email, password });
       return response.data;
     } catch (error: any) {
       console.warn('Error in login');
@@ -36,7 +27,7 @@ export const AuthService = {
   },
   register: async (userData: { email: string; password: string }) => {
     try {
-      const response = await authApi.post('/auth/register', userData);
+      const response = await pilgrimApi.post('/auth/register', userData);
       return response.data;
     } catch (error: any) {
       console.warn('Error in register');
@@ -45,7 +36,7 @@ export const AuthService = {
   },
   getMe: async (token: string) => {
     try {
-      const response = await authApi.get('/auth/users/me', {
+      const response = await pilgrimApi.get('/auth/users/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;
@@ -56,7 +47,7 @@ export const AuthService = {
   },
   refreshToken: async (token: string): Promise<string> => {
     try {
-      const response = await authApi.post('/auth/refresh', {}, {
+      const response = await pilgrimApi.post('/auth/refresh', {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data.token || response.data.access_token;

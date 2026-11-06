@@ -1,28 +1,6 @@
-import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentToken } from '../store/AuthStore';
-import { PILGRIM_API_URL } from '../api/config';
-
-const ticketApi = axios.create({
-  baseURL: PILGRIM_API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'bypass-tunnel-reminder': 'true',
-  },
-});
-
-ticketApi.interceptors.request.use(async (config) => {
-  let token = getCurrentToken();
-  if (!token) {
-    try {
-      token = await AsyncStorage.getItem('@laika_auth_token');
-    } catch {}
-  }
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import { pilgrimApi } from '../api/config';
 
 export interface Ticket {
   id: string;
@@ -75,7 +53,7 @@ export const TicketService = {
 
     try {
       // Llamada real al backend enviando el Bearer token
-      const response = await ticketApi.get(`/tickets/my-tickets`);
+      const response = await pilgrimApi.get(`/tickets/my-tickets`);
       
       // Mapeamos la respuesta real del backend a la interfaz
       if (response.data && Array.isArray(response.data)) {
@@ -119,7 +97,7 @@ export const TicketService = {
   purchaseTicket: async (userId: string, purchaseData: any) => {
     try {
       // Endpoint real que guarda el boleto en la cuenta del usuario
-      const response = await ticketApi.post('/tickets/purchase', {
+      const response = await pilgrimApi.post('/tickets/purchase', {
         ...purchaseData,
         user_id: userId
       });
@@ -141,7 +119,7 @@ export const TicketService = {
    */
   requestTransfer: async (ticketId: string | number, recipientEmail: string, passwordConfirm: string): Promise<TransferRequestResult> => {
     try {
-      const response = await ticketApi.post('/tickets/transfer/request', {
+      const response = await pilgrimApi.post('/tickets/transfer/request', {
         ticket_id: Number(ticketId),
         recipient_email: recipientEmail.trim().toLowerCase(),
         password_confirm: passwordConfirm,
@@ -187,7 +165,7 @@ export const TicketService = {
    */
   acceptTransfer: async (transferId: number): Promise<any> => {
     try {
-      const response = await ticketApi.post(`/tickets/transfer/${transferId}/accept`);
+      const response = await pilgrimApi.post(`/tickets/transfer/${transferId}/accept`);
       return response.data;
     } catch (error: any) {
       const msg = error.response?.data?.message || error.message || 'Error al aceptar la transferencia';
@@ -200,7 +178,7 @@ export const TicketService = {
    */
   rejectTransfer: async (transferId: number): Promise<any> => {
     try {
-      const response = await ticketApi.post(`/tickets/transfer/${transferId}/reject`);
+      const response = await pilgrimApi.post(`/tickets/transfer/${transferId}/reject`);
       return response.data;
     } catch (error: any) {
       const msg = error.response?.data?.message || error.message || 'Error al rechazar la transferencia';
@@ -213,7 +191,7 @@ export const TicketService = {
    */
   cancelTransfer: async (transferId: number): Promise<any> => {
     try {
-      const response = await ticketApi.post(`/tickets/transfer/${transferId}/cancel`);
+      const response = await pilgrimApi.post(`/tickets/transfer/${transferId}/cancel`);
       return response.data;
     } catch (error: any) {
       const msg = error.response?.data?.message || error.message || 'Error al cancelar la transferencia';
@@ -226,7 +204,7 @@ export const TicketService = {
    */
   getIncomingTransfers: async (): Promise<TicketTransfer[]> => {
     try {
-      const response = await ticketApi.get('/tickets/transfer/incoming');
+      const response = await pilgrimApi.get('/tickets/transfer/incoming');
       return Array.isArray(response.data) ? response.data : [];
     } catch (error: any) {
       console.warn('Error fetching incoming transfers:', error.message);
@@ -239,7 +217,7 @@ export const TicketService = {
    */
   getOutgoingTransfers: async (): Promise<TicketTransfer[]> => {
     try {
-      const response = await ticketApi.get('/tickets/transfer/outgoing');
+      const response = await pilgrimApi.get('/tickets/transfer/outgoing');
       return Array.isArray(response.data) ? response.data : [];
     } catch (error: any) {
       console.warn('Error fetching outgoing transfers:', error.message);
@@ -252,7 +230,7 @@ export const TicketService = {
    */
   validateCourtesyToken: async (claimToken: string): Promise<any> => {
     try {
-      const response = await ticketApi.get(`/tickets/courtesy/validate-token/${claimToken.trim()}`);
+      const response = await pilgrimApi.get(`/tickets/courtesy/validate-token/${claimToken.trim()}`);
       return response.data;
     } catch (error: any) {
       const msg = error.response?.data?.message || error.message || 'Código de cortesía inválido o expirado';
@@ -265,7 +243,7 @@ export const TicketService = {
    */
   claimCourtesyTicket: async (claimToken: string): Promise<any> => {
     try {
-      const response = await ticketApi.post('/tickets/courtesy/claim', {
+      const response = await pilgrimApi.post('/tickets/courtesy/claim', {
         claim_token: claimToken.trim(),
       });
       return response.data;

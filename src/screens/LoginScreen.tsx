@@ -220,22 +220,6 @@ export const LoginScreen: React.FC<Props> = ({ route, navigation }) => {
           </TouchableOpacity>
 
           <View style={styles.footer}>
-            <Text style={styles.socialText}>or via social media</Text>
-
-            <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.socialIconBtn} activeOpacity={0.8}>
-                <Ionicons name="logo-google" size={20} color="#4ea8de" />
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.socialIconBtn} activeOpacity={0.8}>
-                <Ionicons name="logo-apple" size={20} color="#4ea8de" />
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.socialIconBtn} activeOpacity={0.8}>
-                <Ionicons name="logo-facebook" size={20} color="#4ea8de" />
-              </TouchableOpacity>
-            </View>
-
             <View style={styles.registerRow}>
               <Text style={styles.footerText}>¿No tienes una cuenta? </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Register', { eventPreview })}>
