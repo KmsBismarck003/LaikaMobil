@@ -16,7 +16,6 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import * as Device from 'expo-device';
 import { useAppTheme } from '../../../styles/ThemeProvider';
 import { useStyles } from '../../../styles/useStyles';
 
@@ -33,14 +32,13 @@ export const SupportEmailCard: React.FC<SupportEmailCardProps> = ({
   const { theme } = useAppTheme();
   const [copied, setCopied] = useState(false);
 
-  const SUPPORT_EMAIL = 'soporte@laikaclub.com';
+  const SUPPORT_EMAIL = 'jreyes6458@gmail.com';
 
   const generateTemplate = () => {
-    const deviceModel = Device.modelName || 'Dispositivo Móvil';
-    const osInfo = `${Device.osName || Platform.OS} ${Device.osVersion || ''}`;
     const userName = user?.name || user?.fullName || 'Usuario';
     const userId = user?.id ? `#${user.id}` : 'No autenticado';
     const userEmail = user?.email || 'No registrado';
+    const platformName = Platform.OS === 'ios' ? 'iOS' : 'Android';
     const now = new Date();
     const dateStr = `${now.toLocaleDateString('es-MX')} ${now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })} hrs`;
 
@@ -54,10 +52,10 @@ Describe tu duda o problema a continuación:
 
 
 --------------------------------------------------
-DATOS TÉCNICOS (No borrar para agilizar tu atención):
+DATOS DE LA CUENTA (Para verificar y agilizar tu atención):
 • Usuario: ${userName} (${userId})
-• Email registrado: ${userEmail}
-• Dispositivo: ${deviceModel} (${osInfo})
+• Correo registrado: ${userEmail}
+• Sistema: ${platformName}
 • Versión App: LaikaMobil v1.0.0
 • Fecha/Hora: ${dateStr}
 --------------------------------------------------`;
@@ -107,7 +105,7 @@ DATOS TÉCNICOS (No borrar para agilizar tu atención):
       </View>
 
       <Text style={styles.description}>
-        Al redactar tu consulta, la app inyecta automáticamente los datos técnicos de tu cuenta para resolver tu caso directamente sin intermediarios ni spam.
+        Al redactar tu consulta, la app prepara el correo con tu ID de cuenta y versión de la app para resolver tu caso directamente sin intermediarios ni spam.
       </Text>
 
       {/* Botón Principal: Redactar */}
@@ -242,3 +240,4 @@ const createStyles = (theme: any) =>
       fontWeight: '500',
     },
   });
+
