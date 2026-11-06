@@ -243,8 +243,11 @@ export const TicketService = {
    */
   claimCourtesyTicket: async (claimToken: string): Promise<any> => {
     try {
+      const cleanToken = claimToken.trim().toUpperCase();
       const response = await pilgrimApi.post('/tickets/courtesy/claim', {
-        claim_token: claimToken.trim(),
+        claimToken: cleanToken,
+        claim_token: cleanToken,
+        token: cleanToken,
       });
       return response.data;
     } catch (error: any) {

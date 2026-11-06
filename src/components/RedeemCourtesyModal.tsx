@@ -78,7 +78,8 @@ export const RedeemCourtesyModal: React.FC<RedeemCourtesyModalProps> = ({
   };
 
   const handleClaim = async () => {
-    const clean = code.trim().toUpperCase();
+    const raw = preview?.claim_token || preview?.claimToken || code;
+    const clean = String(raw || '').trim().toUpperCase();
     if (!clean) return;
 
     setSubmitting(true);
