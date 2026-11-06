@@ -278,58 +278,47 @@ export const MyTicketsScreen = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
 
-      {/* Header */}
+      {/* Header Minimalista */}
       <View style={styles.header}>
-        <View style={{ flex: 1, marginRight: 8 }}>
+        <View style={{ flex: 1, marginRight: 12 }}>
           <Typography variant="display" color={theme.colors.text} style={styles.headerTitle}>
             Mis Boletos
           </Typography>
-          <Typography variant="footnote" color={theme.colors.textSecondary}>
-            {tickets.length} {tickets.length === 1 ? 'boleto' : 'boletos'} en total
-          </Typography>
-          <SyncStatusBadge
-            status={syncState}
-            lastSyncTimestamp={lastSyncTimestamp}
-            onPressRetry={loadData}
-          />
-        </View>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <TouchableOpacity
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: 'rgba(139, 92, 246, 0.15)',
-              borderWidth: 1,
-              borderColor: 'rgba(139, 92, 246, 0.4)',
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: 12,
-              gap: 6,
-            }}
-            onPress={() => setIsRedeemModalVisible(true)}
-            activeOpacity={0.7}
-          >
-            <Feather name="gift" size={14} color="#a78bfa" />
-            <Typography variant="footnote" color="#c4b5fd" weight="600">
-              Canjear
+          <View style={styles.subtitleRow}>
+            <Typography variant="footnote" color={theme.colors.textSecondary}>
+              {tickets.length} {tickets.length === 1 ? 'pase activo' : 'pases'}
             </Typography>
-          </TouchableOpacity>
-
-          <View style={styles.ticketIconBadge}>
-            <Feather name="credit-card" size={20} color={theme.colors.primary} />
+            <Typography variant="footnote" color={theme.colors.textTertiary}>
+              •
+            </Typography>
+            <SyncStatusBadge
+              status={syncState}
+              lastSyncTimestamp={lastSyncTimestamp}
+              onPressRetry={loadData}
+            />
           </View>
         </View>
+
+        <TouchableOpacity
+          style={styles.redeemButton}
+          onPress={() => setIsRedeemModalVisible(true)}
+          activeOpacity={0.75}
+        >
+          <Feather name="gift" size={13} color={theme.colors.text} style={{ marginRight: 6 }} />
+          <Typography variant="footnote" color={theme.colors.text} weight="600">
+            Canjear
+          </Typography>
+        </TouchableOpacity>
       </View>
 
-      {/* Tab bar horizontal scrollable */}
+      {/* Segmented Control de Pestañas (Sin neón) */}
       <View style={styles.tabBarWrapper}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.tabBarScroll}
         >
-          {TAB_CONFIG.map(({ key, label, icon }) => {
+          {TAB_CONFIG.map(({ key, label }) => {
             const isActive = activeTab === key;
             const count =
               key === 'refunds'
@@ -341,17 +330,12 @@ export const MyTicketsScreen = () => {
                 key={key}
                 style={[styles.tabItem, isActive && styles.tabItemActive]}
                 onPress={() => setActiveTab(key)}
-                activeOpacity={0.75}
+                activeOpacity={0.8}
               >
-                <Feather
-                  name={icon as any}
-                  size={14}
-                  color={isActive ? theme.colors.primary : theme.colors.textSecondary}
-                />
                 <Typography
                   variant="footnote"
                   weight={isActive ? '700' : '500'}
-                  color={isActive ? theme.colors.primary : theme.colors.textSecondary}
+                  color={isActive ? theme.colors.text : theme.colors.textSecondary}
                   style={styles.tabText}
                 >
                   {label}
@@ -360,7 +344,7 @@ export const MyTicketsScreen = () => {
                   <View style={[styles.countBadge, isActive && styles.countBadgeActive]}>
                     <Typography
                       variant="overline"
-                      color={isActive ? theme.colors.primary : theme.colors.textSecondary}
+                      color={isActive ? theme.colors.background : theme.colors.textSecondary}
                       style={styles.countText}
                     >
                       {count}
@@ -577,26 +561,33 @@ const createStyles = (theme: any) => StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.l,
-    paddingTop: theme.spacing.l,
-    paddingBottom: theme.spacing.m,
+    paddingTop: theme.spacing.m,
+    paddingBottom: 8,
   },
   headerTitle: {
-    fontSize: 28,
-    letterSpacing: -0.5,
+    fontSize: 26,
+    letterSpacing: -0.6,
+    fontWeight: '800',
     marginBottom: 2,
   },
-  ticketIconBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: theme.borderRadius.l,
-    backgroundColor: theme.colors.primaryFaint,
-    borderWidth: 1,
-    borderColor: theme.colors.primaryGlow,
+  subtitleRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
+  },
+  redeemButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surfaceElevated || 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: theme.colors.borderMedium || 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
   },
   tabBarWrapper: {
-    paddingBottom: theme.spacing.s,
+    paddingBottom: 8,
+    paddingTop: 4,
   },
   tabBarScroll: {
     paddingHorizontal: theme.spacing.l,
@@ -607,36 +598,38 @@ const createStyles = (theme: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: theme.borderRadius.full,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 10,
     gap: 6,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.surfaceElevated || 'rgba(255, 255, 255, 0.03)',
     borderWidth: 1,
-    borderColor: theme.colors.borderFaint,
+    borderColor: theme.colors.borderFaint || 'rgba(255, 255, 255, 0.06)',
   },
   tabItemActive: {
-    backgroundColor: theme.colors.primaryFaint,
-    borderColor: theme.colors.primaryGlow,
+    backgroundColor: theme.colors.surfaceHighlight || theme.colors.surface,
+    borderColor: theme.colors.borderMedium || 'rgba(255, 255, 255, 0.16)',
   },
   tabText: {
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
+    fontSize: 12,
   },
   countBadge: {
-    backgroundColor: theme.colors.surfaceHighlight,
-    borderRadius: theme.borderRadius.full,
-    paddingHorizontal: 6,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 8,
+    paddingHorizontal: 5,
     paddingVertical: 1,
-    minWidth: 20,
+    minWidth: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   countBadgeActive: {
-    backgroundColor: theme.colors.primaryGlow,
+    backgroundColor: theme.colors.text,
   },
   countText: {
-    fontSize: 9.5,
+    fontSize: 9,
     letterSpacing: 0,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   listContent: {
     padding: theme.spacing.l,

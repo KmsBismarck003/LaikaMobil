@@ -147,12 +147,12 @@ const CustomBottomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) 
                   tabBarStyles.iconBox,
                   isFocused && {
                     backgroundColor: isDark
-                      ? 'rgba(124, 92, 252, 0.28)'
-                      : 'rgba(107, 75, 224, 0.14)',
+                      ? 'rgba(255, 255, 255, 0.08)'
+                      : 'rgba(0, 0, 0, 0.06)',
                     borderWidth: 1,
                     borderColor: isDark
-                      ? 'rgba(124, 92, 252, 0.45)'
-                      : 'rgba(107, 75, 224, 0.28)',
+                      ? 'rgba(255, 255, 255, 0.14)'
+                      : 'rgba(0, 0, 0, 0.08)',
                   },
                 ]}
               >

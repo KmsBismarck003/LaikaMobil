@@ -16,6 +16,7 @@ export interface Ticket {
   isCourtesy?: boolean;
   recipientType?: string;
   courtesyMotive?: string;
+  category?: string;
 }
 
 export const normalizeTicket = (item: any): Ticket => {
@@ -87,6 +88,13 @@ export const normalizeTicket = (item: any): Ticket => {
     item.courtesy_motive ||
     item.motive ||
     item.note;
+  const category =
+    item.category ||
+    item.eventCategory ||
+    item.event_category ||
+    item.event?.category ||
+    item.category_name ||
+    '';
 
   return {
     id,
@@ -102,6 +110,7 @@ export const normalizeTicket = (item: any): Ticket => {
     isCourtesy,
     recipientType,
     courtesyMotive,
+    category,
   };
 };
 

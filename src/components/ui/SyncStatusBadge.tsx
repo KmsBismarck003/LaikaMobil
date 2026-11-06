@@ -3,8 +3,7 @@
  * Clean Architecture - Capa 2: Componente UI Atómico y Presentacional
  *
  * Muestra el estado de sincronización bidireccional en tiempo real con la nube.
- * Cumple con el estándar de accesibilidad, tokens semánticos multitema (Dark/Light)
- * y cero emojis en la interfaz.
+ * Rediseño minimalista sin cajas neón ni saturación.
  */
 
 import React from 'react';
@@ -39,41 +38,40 @@ export const SyncStatusBadge: React.FC<SyncStatusBadgeProps> = ({
     const date = new Date(ts);
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
-    return ` • ${hours}:${minutes}`;
+    return ` ${hours}:${minutes}`;
   };
 
-  let badgeBg = theme.colors.surface;
+  let isClean = false;
+  let badgeBg = theme.colors.surfaceElevated || 'rgba(255, 255, 255, 0.04)';
+  let borderColor = theme.colors.borderFaint || 'rgba(255, 255, 255, 0.08)';
   let textColor = theme.colors.textSecondary;
   let iconElement = null;
   let labelText = '';
 
   switch (status) {
     case 'syncing':
-      badgeBg = theme.colors.infoFaint;
-      textColor = theme.colors.info;
-      iconElement = <ActivityIndicator size={12} color={theme.colors.info} style={styles.spinner} />;
-      labelText = 'Sincronizando con la nube...';
+      textColor = theme.colors.textSecondary;
+      iconElement = <ActivityIndicator size={10} color={theme.colors.textSecondary} style={styles.spinner} />;
+      labelText = 'Sincronizando...';
       break;
 
     case 'synced':
-      badgeBg = theme.colors.successFaint;
-      textColor = theme.colors.success;
-      iconElement = <Feather name="check-circle" size={12} color={theme.colors.success} />;
+      isClean = true;
+      textColor = theme.colors.textTertiary;
+      iconElement = <View style={[styles.dot, { backgroundColor: theme.colors.success || '#30D158' }]} />;
       labelText = `Sincronizado${formatLastSync(lastSyncTimestamp)}`;
       break;
 
     case 'offline':
-      badgeBg = theme.colors.warningFaint;
       textColor = theme.colors.warning;
-      iconElement = <Feather name="cloud-off" size={12} color={theme.colors.warning} />;
-      labelText = 'Modo local • Toca para sincronizar';
+      iconElement = <Feather name="cloud-off" size={11} color={theme.colors.warning} />;
+      labelText = 'Modo local';
       break;
 
     case 'error':
-      badgeBg = theme.colors.errorFaint;
       textColor = theme.colors.error;
-      iconElement = <Feather name="alert-circle" size={12} color={theme.colors.error} />;
-      labelText = 'Error de conexión • Reintentar';
+      iconElement = <Feather name="alert-circle" size={11} color={theme.colors.error} />;
+      labelText = 'Reintentar sync';
       break;
   }
 
@@ -83,10 +81,7 @@ export const SyncStatusBadge: React.FC<SyncStatusBadgeProps> = ({
     <View
       style={[
         styles.container,
-        {
-          backgroundColor: badgeBg,
-          borderColor: theme.colors.border,
-        },
+        isClean ? styles.cleanContainer : { backgroundColor: badgeBg, borderColor },
       ]}
     >
       <View style={styles.iconContainer}>{iconElement}</View>
@@ -115,19 +110,31 @@ export const SyncStatusBadge: React.FC<SyncStatusBadgeProps> = ({
 
 const styles = StyleSheet.create({
   touchable: {
-    alignSelf: 'flex-start',
-    marginVertical: 4,
+    alignSelf: 'center',
   },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
     borderWidth: 1,
   },
+  cleanContainer: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 4,
+    paddingVertical: 0,
+  },
   iconContainer: {
-    marginRight: 6,
+    marginRight: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   spinner: {
     marginRight: 2,
