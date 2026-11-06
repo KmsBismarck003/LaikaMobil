@@ -22,7 +22,7 @@ import { useAppTheme } from '../styles/ThemeProvider';
 import { Typography } from './ui/Typography';
 import { Button } from './ui/Button';
 import { useStyles } from '../styles/useStyles';
-import { TicketService } from '../services/TicketService';
+import { TicketService, normalizeTicket } from '../services/TicketService';
 
 interface RedeemCourtesyModalProps {
   visible: boolean;
@@ -88,8 +88,21 @@ export const RedeemCourtesyModal: React.FC<RedeemCourtesyModalProps> = ({
     try {
       const res = await TicketService.claimCourtesyTicket(clean);
       setSuccessMsg('Boleto de cortesía canjeado con éxito');
+      const mergedTicket = normalizeTicket({
+        ...preview,
+        ...res,
+        eventName: res?.event_name || preview?.event_name,
+        date: res?.event_date || preview?.event_date || res?.purchase_date,
+        time: res?.event_time || preview?.event_time,
+        venueName: res?.venue_name || preview?.venue_name,
+        seatInfo: res?.section_name || preview?.section_name,
+        courtesyMotive: res?.courtesy_motive || preview?.motive,
+        recipientType: res?.recipient_type || preview?.recipient_type,
+        isCourtesy: true,
+        price: 0,
+      });
       setTimeout(() => {
-        onSuccess(res);
+        onSuccess(mergedTicket);
         onClose();
       }, 1000);
     } catch (err: any) {

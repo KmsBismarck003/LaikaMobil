@@ -6,6 +6,8 @@ export interface Ticket {
   id: string;
   eventName: string;
   date: string;
+  time?: string;
+  venueName?: string;
   status: 'active' | 'in_progress' | 'history' | 'cancelled' | 'refunded' | 'transferred' | 'transfer_pending' | string;
   seatInfo?: string;
   qrCode?: string;
@@ -13,7 +15,95 @@ export interface Ticket {
   price?: number;
   isCourtesy?: boolean;
   recipientType?: string;
+  courtesyMotive?: string;
 }
+
+export const normalizeTicket = (item: any): Ticket => {
+  if (!item) return {} as Ticket;
+  const id = String(item.id ?? item.ticketId ?? item.ticket_id ?? '');
+  const eventName =
+    item.eventName ||
+    item.event_name ||
+    item.event?.title ||
+    item.event?.name ||
+    item.title ||
+    'Evento LAIKA Club';
+  const date =
+    item.date ||
+    item.event_date ||
+    item.eventDate ||
+    item.event?.date ||
+    item.purchase_date ||
+    item.purchaseDate ||
+    '';
+  const time = item.time || item.event_time || item.eventTime || item.event?.time || '';
+  const venueName =
+    item.venueName ||
+    item.venue_name ||
+    item.venue ||
+    item.event?.venue_name ||
+    item.event?.venue ||
+    '';
+  const seatInfo =
+    item.seatInfo ||
+    item.seat_info ||
+    item.section_name ||
+    item.sectionName ||
+    item.seat_label ||
+    item.seatLabel ||
+    item.zone_name ||
+    item.zoneName ||
+    (item.seat_id ? `Asiento #${item.seat_id}` : 'Acceso General');
+  const qrCode =
+    item.qrCode ||
+    item.qr_code ||
+    item.qr_data ||
+    item.qrData ||
+    item.ticket_code ||
+    item.ticketCode ||
+    id;
+  const ticketCode =
+    item.ticketCode ||
+    item.ticket_code ||
+    item.code ||
+    item.qrCode ||
+    item.qr_code ||
+    id;
+  const rawPrice = item.price ?? item.total_price ?? item.amount;
+  const price = typeof rawPrice === 'number' ? rawPrice : Number(rawPrice || 0);
+  const isCourtesy = Boolean(
+    item.isCourtesy ||
+    item.is_courtesy ||
+    item.paymentMethod === 'courtesy' ||
+    item.payment_method === 'courtesy' ||
+    price === 0
+  );
+  const recipientType =
+    item.recipientType ||
+    item.recipient_type ||
+    (isCourtesy ? 'Invitado Especial' : undefined);
+  const courtesyMotive =
+    item.courtesyMotive ||
+    item.courtesy_motive ||
+    item.motive ||
+    item.note;
+
+  return {
+    id,
+    eventName,
+    date,
+    time,
+    venueName,
+    status: item.status || 'active',
+    seatInfo,
+    qrCode,
+    ticketCode,
+    price,
+    isCourtesy,
+    recipientType,
+    courtesyMotive,
+  };
+};
 
 export interface TicketTransfer {
   id: number;
@@ -57,18 +147,7 @@ export const TicketService = {
       
       // Mapeamos la respuesta real del backend a la interfaz
       if (response.data && Array.isArray(response.data)) {
-        const parsedTickets = response.data.map((item: any) => ({
-          id: item.id?.toString(),
-          eventName: item.event?.title || item.event?.name || item.event_name || item.eventName || 'Evento Desconocido',
-          date: item.event?.date || item.date || item.purchase_date || '',
-          status: item.status || 'history', 
-          seatInfo: item.seat_label || item.seat_id || item.zone_name || item.section_name || 'General',
-          qrCode: item.qr_code || item.qr_data || item.ticket_code || item.id?.toString(),
-          ticketCode: item.ticket_code || item.ticketCode || item.code || item.qr_code,
-          price: item.price || 0,
-          isCourtesy: Boolean(item.is_courtesy || item.isCourtesy),
-          recipientType: item.recipient_type || item.recipientType,
-        }));
+        const parsedTickets = response.data.map(normalizeTicket);
 
         // Guardamos en Caché Offline inmediatamente tras un fetch exitoso
         await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(parsedTickets));
