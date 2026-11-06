@@ -5,3 +5,5 @@ export * from './components/FAQCategory';
 export * from './components/FeedbackSection';
 export * from './components/ServiceRequestModal';
 export * from './components/SupportSkeleton';
+export * from './components/SupportEmailCard';
+export * from './components/SupportTopicSelector';
