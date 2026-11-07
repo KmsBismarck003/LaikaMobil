@@ -33,6 +33,7 @@ import { useAuth } from '../hooks/useAuth';
 import { biometricService } from '../services/security/BiometricService';
 import { TicketActionModal } from '../components/TicketActionModal';
 import { TicketCard } from '../components/ui/TicketCard';
+import { isDatePast } from '../styles/designUtils';
 import { Typography } from '../components/ui/Typography';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -206,18 +207,56 @@ export const MyTicketsScreen = () => {
     }
   };
 
+  const isTicketActive = (t: Ticket): boolean => {
+    if (isDatePast(t.date) && t.status !== 'in_progress') {
+      return false;
+    }
+    return t.status === 'active' || t.status === 'confirmed' || t.status === 'transfer_pending';
+  };
+
+  const isTicketInProgress = (t: Ticket): boolean => {
+    return t.status === 'in_progress';
+  };
+
+  const isTicketHistorical = (t: Ticket): boolean => {
+    if (
+      t.status === 'history' ||
+      t.status === 'used' ||
+      t.status === 'unutilized' ||
+      t.status === 'redeemed' ||
+      t.status === 'expired' ||
+      t.status === 'transferred' ||
+      t.status === 'cancelled' ||
+      t.status === 'refunded'
+    ) {
+      return true;
+    }
+    if (isDatePast(t.date) && t.status !== 'in_progress') {
+      return true;
+    }
+    return false;
+  };
+
   const displayedTickets = tickets.filter((t) => {
     if (activeTab === 'active') {
-      return t.status === 'active' || t.status === 'transfer_pending';
+      return isTicketActive(t);
     }
     if (activeTab === 'in_progress') {
-      return t.status === 'in_progress';
+      return isTicketInProgress(t);
     }
     if (activeTab === 'history') {
-      return t.status === 'history' || t.status === 'transferred' || t.status === 'cancelled' || t.status === 'refunded';
+      return isTicketHistorical(t);
     }
     return false;
   });
+
+  const getTabCount = (tabKey: TabKey): number => {
+    if (tabKey === 'refunds') return refundRequests.length;
+    if (tabKey === 'active') return tickets.filter(isTicketActive).length;
+    if (tabKey === 'in_progress') return tickets.filter(isTicketInProgress).length;
+    if (tabKey === 'history') return tickets.filter(isTicketHistorical).length;
+    return 0;
+  };
 
   const handleNavigateToPass = (ticket: Ticket) => {
     navigation.navigate('TicketPass', { ticket });
@@ -286,7 +325,7 @@ export const MyTicketsScreen = () => {
           </Typography>
           <View style={styles.subtitleRow}>
             <Typography variant="footnote" color={theme.colors.textSecondary}>
-              {tickets.length} {tickets.length === 1 ? 'pase activo' : 'pases'}
+              {tickets.length} {tickets.length === 1 ? 'pase' : 'pases'} en total
             </Typography>
             <Typography variant="footnote" color={theme.colors.textTertiary}>
               •
@@ -320,10 +359,7 @@ export const MyTicketsScreen = () => {
         >
           {TAB_CONFIG.map(({ key, label }) => {
             const isActive = activeTab === key;
-            const count =
-              key === 'refunds'
-                ? refundRequests.length
-                : tickets.filter((t) => t.status === key).length;
+            const count = getTabCount(key);
 
             return (
               <TouchableOpacity

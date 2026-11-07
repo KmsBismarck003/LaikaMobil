@@ -30,13 +30,33 @@ const getStatusConfig = (theme: any): Record<string, { color: string; label: str
     color: theme.colors.success || '#30D158',
     label: 'ACTIVO',
   },
+  confirmed: {
+    color: theme.colors.success || '#30D158',
+    label: 'ACTIVO',
+  },
   in_progress: {
     color: theme.colors.warning || '#FF9F0A',
     label: 'EN VIVO',
   },
   history: {
     color: theme.colors.textTertiary || '#8E8E93',
+    label: 'HISTORIAL',
+  },
+  used: {
+    color: theme.colors.textTertiary || '#8E8E93',
     label: 'USADO',
+  },
+  unutilized: {
+    color: theme.colors.textTertiary || '#8E8E93',
+    label: 'VENCIDO',
+  },
+  expired: {
+    color: theme.colors.textTertiary || '#8E8E93',
+    label: 'EXPIRADO',
+  },
+  redeemed: {
+    color: theme.colors.textTertiary || '#8E8E93',
+    label: 'CANJEADO',
   },
   cancelled: {
     color: theme.colors.error || '#FF453A',

@@ -12,7 +12,7 @@ export const AchievementsScreen: React.FC = () => {
   const styles = useStyles(createStyles);
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
-  const { coupons, totalPoints, tier, nextTier, loading, error } = useAchievements();
+  const { coupons, totalPoints, tier, nextTier, serverTier, loading, error } = useAchievements();
 
   if (loading) {
     return (
@@ -76,7 +76,7 @@ export const AchievementsScreen: React.FC = () => {
         <View style={styles.contentPadding}>
           {phases.map((phaseName, phaseIdx) => {
             const phaseTiers = TIER_DATA.filter(t => t.phase === phaseName);
-            const phaseProgress = phaseTiers.filter(t => totalPoints >= t.pts).length;
+            const phaseProgress = phaseTiers.filter(t => totalPoints >= t.pts || (serverTier ? serverTier >= t.tier : false)).length;
             const totalInPhase = phaseTiers.length;
             if (totalInPhase === 0) return null;
 
@@ -103,8 +103,8 @@ export const AchievementsScreen: React.FC = () => {
 
                 <View style={styles.list}>
                   {phaseTiers.map((t) => {
-                    const isUnlocked = totalPoints >= t.pts;
-                    const tierProgress = t.pts === 0 ? 100 : Math.min(100, (totalPoints / t.pts) * 100);
+                    const isUnlocked = totalPoints >= t.pts || (serverTier ? serverTier >= t.tier : false);
+                    const tierProgress = isUnlocked ? 100 : (t.pts === 0 ? 100 : Math.min(100, (totalPoints / t.pts) * 100));
                     
                     return (
                       <View key={t.tier} style={[styles.achievementCard, isUnlocked ? { borderColor: t.color } : {}]}>

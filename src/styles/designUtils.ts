@@ -105,3 +105,20 @@ export const formatTime = (timeStr?: string): string => {
   if (!timeStr) return '';
   return `${timeStr.substring(0, 5)} hrs`;
 };
+
+/**
+ * Determina si una fecha ya transcurrió en el tiempo (evento concluido).
+ * Considera el fin del día especificado en zona local.
+ */
+export const isDatePast = (dateStr?: string): boolean => {
+  if (!dateStr) return false;
+  try {
+    const normalized = dateStr.includes('T') ? dateStr : `${dateStr}T23:59:59`;
+    const d = new Date(normalized);
+    if (isNaN(d.getTime())) return false;
+    return d.getTime() < Date.now();
+  } catch {
+    return false;
+  }
+};
+

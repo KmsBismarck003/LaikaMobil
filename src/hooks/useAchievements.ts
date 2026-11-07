@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
+import { getCurrentUser } from '../store/AuthStore';
 import { AchievementsService } from '../services/AchievementsService';
 
 export const TIER_DATA = [
@@ -15,15 +16,23 @@ export const TIER_DATA = [
   { tier: 10, label: 'El Legado Laika', icon: 'award', color: '#eab308', pts: 10000, phase: 'LEYENDA', reward: 'MEMBRESÍA VITALICIA' },
 ];
 
-export const getTier = (pts: number) => {
+export const getTier = (pts: number, serverTierNum?: number | null) => {
   let t = TIER_DATA[0];
   for (const td of TIER_DATA) {
     if (pts >= td.pts) t = td;
   }
+  if (serverTierNum && serverTierNum > t.tier) {
+    const matched = TIER_DATA.find(td => td.tier === serverTierNum);
+    if (matched) t = matched;
+  }
   return t;
 };
 
-export const getNextTier = (pts: number) => {
+export const getNextTier = (pts: number, currentTierNum?: number) => {
+  if (currentTierNum) {
+    const nextByTier = TIER_DATA.find(td => td.tier > currentTierNum && td.pts > pts);
+    if (nextByTier) return nextByTier;
+  }
   return TIER_DATA.find(td => td.pts > pts) || null;
 };
 
@@ -32,11 +41,18 @@ export const useAchievements = () => {
   
   const [coupons, setCoupons] = useState<any[]>([]);
   const [totalPoints, setTotalPoints] = useState(0);
+  const [serverTier, setServerTier] = useState<number | null>(null);
+  const [achievements, setAchievements] = useState<any[]>([]);
+  const [ticketCount, setTicketCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAchievements = useCallback(async () => {
-    if (!user) return;
+    const activeUser = user || getCurrentUser();
+    if (!activeUser) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
@@ -48,7 +64,12 @@ export const useAchievements = () => {
 
       if (achievementsData.status === 'fulfilled') {
         const data = achievementsData.value;
-        setTotalPoints(data?.total_points || 0);
+        const count = Number(data?.ticket_count ?? data?.ticketCount ?? 0);
+        const pts = Number(data?.total_points ?? data?.totalPoints ?? (count * 100));
+        setTotalPoints(pts);
+        setTicketCount(count);
+        if (data?.tier) setServerTier(Number(data.tier));
+        if (Array.isArray(data?.achievements)) setAchievements(data.achievements);
       } else {
         setError('No se pudieron cargar los logros');
       }
@@ -70,11 +91,17 @@ export const useAchievements = () => {
     fetchAchievements();
   }, [fetchAchievements]);
 
+  const currentTier = getTier(totalPoints, serverTier);
+  const nextTier = getNextTier(totalPoints, currentTier.tier);
+
   return {
     coupons,
     totalPoints,
-    tier: getTier(totalPoints),
-    nextTier: getNextTier(totalPoints),
+    tier: currentTier,
+    nextTier,
+    serverTier,
+    achievements,
+    ticketCount,
     loading,
     error,
     refresh: fetchAchievements,

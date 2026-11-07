@@ -36,7 +36,7 @@ export const TicketPassScreen: React.FC<Props> = ({ route, navigation }) => {
   }, [route.params?.ticket]);
 
   const canRequestRefund =
-    ticket.status === 'active' &&
+    (ticket.status === 'active' || ticket.status === 'confirmed') &&
     !ticket.isCourtesy &&
     typeof ticket.price === 'number' &&
     ticket.price > 0;
@@ -121,6 +121,20 @@ export const TicketPassScreen: React.FC<Props> = ({ route, navigation }) => {
               <Text style={styles.revokedTitle}>Boleto Cancelado</Text>
               <Text style={styles.revokedDescription}>
                 Este boleto fue cancelado y su acceso al evento ha sido completamente deshabilitado.
+              </Text>
+            </View>
+          ) : ticket.status === 'used' || ticket.status === 'unutilized' || ticket.status === 'expired' ? (
+            <View style={styles.revokedCard}>
+              <View style={styles.revokedIconBox}>
+                <Feather name="check-circle" size={30} color={theme.colors.textTertiary} />
+              </View>
+              <Text style={styles.revokedTitle}>
+                {ticket.status === 'used' ? 'Boleto Utilizado' : 'Evento Concluido'}
+              </Text>
+              <Text style={styles.revokedDescription}>
+                {ticket.status === 'used'
+                  ? 'Este boleto fue utilizado y registrado en el acceso del evento.'
+                  : 'La fecha de este evento ha finalizado. Este boleto forma parte de tu historial.'}
               </Text>
             </View>
           ) : (

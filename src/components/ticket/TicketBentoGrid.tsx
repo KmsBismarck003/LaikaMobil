@@ -17,8 +17,10 @@ export const TicketBentoGrid: React.FC<TicketBentoGridProps> = ({ ticket }) => {
   const formattedDate = formatShortDate(ticket.date) || ticket.date || 'Por confirmar';
   const formattedTimeStr = ticket.time ? formatTime(ticket.time) : '';
 
+  const isTicketActive = ticket.status === 'active' || ticket.status === 'confirmed';
+
   const statusLabel =
-    ticket.status === 'active'
+    isTicketActive
       ? 'VÁLIDO'
       : ticket.status === 'transfer_pending'
       ? 'EN TRANSFERENCIA'
@@ -28,6 +30,12 @@ export const TicketBentoGrid: React.FC<TicketBentoGridProps> = ({ ticket }) => {
       ? 'CANCELADO'
       : ticket.status === 'refunded'
       ? 'REEMBOLSADO'
+      : ticket.status === 'unutilized'
+      ? 'VENCIDO'
+      : ticket.status === 'expired'
+      ? 'EXPIRADO'
+      : ticket.status === 'redeemed'
+      ? 'CANJEADO'
       : 'USADO';
 
   const categoryLabel = (ticket.category || 'EVENTO LAIKA').toUpperCase();
@@ -43,7 +51,7 @@ export const TicketBentoGrid: React.FC<TicketBentoGridProps> = ({ ticket }) => {
         <View
           style={[
             styles.statusBadge,
-            ticket.status === 'active'
+            isTicketActive
               ? styles.statusActive
               : ticket.status === 'transfer_pending'
               ? styles.statusWarning
@@ -54,11 +62,11 @@ export const TicketBentoGrid: React.FC<TicketBentoGridProps> = ({ ticket }) => {
               : styles.statusUsed,
           ]}
         >
-          {ticket.status === 'active' ? <View style={styles.pulseDot} /> : null}
+          {isTicketActive ? <View style={styles.pulseDot} /> : null}
           <Text
             style={[
               styles.statusText,
-              ticket.status === 'active'
+              isTicketActive
                 ? styles.statusTextActive
                 : ticket.status === 'transfer_pending'
                 ? styles.statusTextWarning
