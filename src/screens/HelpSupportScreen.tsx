@@ -24,7 +24,6 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useAppTheme } from '../styles/ThemeProvider';
 import { useStyles } from '../styles/useStyles';
@@ -43,7 +42,6 @@ export const HelpSupportScreen: React.FC = () => {
   const styles = useStyles(createStyles);
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
 
   const userFromHook = useAuth();
   const user = userFromHook || getCurrentUser();
@@ -77,23 +75,6 @@ export const HelpSupportScreen: React.FC = () => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* ── BARRA SUPERIOR FIJA RESPETANDO SAFE AREA ── */}
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          activeOpacity={0.7}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Feather name="arrow-left" size={20} color={theme.colors.text} />
-          <Text style={styles.backText}>Volver</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>Ayuda y Soporte</Text>
-
-        <View style={{ width: 60 }} />
-      </View>
-
       {/* ── CONTENIDO SCROLLABLE ── */}
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -187,37 +168,6 @@ const createStyles = (theme: any) =>
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
-    },
-    header: {
-      flexDirection: 'row',
-      width: '100%',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: theme.spacing.m,
-      paddingBottom: 12,
-      backgroundColor: theme.colors.surface || theme.colors.background,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.borderFaint || 'rgba(255, 255, 255, 0.06)',
-      zIndex: 10,
-    },
-    backButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      minWidth: 60,
-      paddingVertical: 6,
-    },
-    backText: {
-      color: theme.colors.text,
-      fontSize: 14,
-      fontWeight: '600',
-    },
-    headerTitle: {
-      ...theme.typography.header,
-      fontSize: 16,
-      fontWeight: '700',
-      color: theme.colors.text,
-      textAlign: 'center',
     },
     scrollContent: {
       paddingHorizontal: 16,
